@@ -1,5 +1,6 @@
 package com.example.deliverfood;
 
+import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
@@ -47,6 +48,8 @@ public class RecyclerViewAdapter_orders extends RecyclerView.Adapter<RecyclerVie
     FusedLocationProviderClient fusedLocationProviderClient;
     Location currentLocation;
 
+
+    private Activity activity;
 
     static float DEFAULT_ZOOM = 10;
     String phone_number;
@@ -127,6 +130,7 @@ public class RecyclerViewAdapter_orders extends RecyclerView.Adapter<RecyclerVie
 
 
 
+
     }
 
     @NonNull
@@ -199,7 +203,10 @@ public class RecyclerViewAdapter_orders extends RecyclerView.Adapter<RecyclerVie
 
 
 
-                    documentReference.update(CONFIRM, true).addOnSuccessListener(new OnSuccessListener<Void>() {
+                    Map mmap = new HashMap();
+                    mmap.put(CONFIRM, true);
+
+                    documentReference.set(mmap,SetOptions.merge()).addOnSuccessListener(new OnSuccessListener<Void>() {
                         @Override
                         public void onSuccess(Void aVoid) {
                             progressDialog.dismiss();
@@ -209,6 +216,8 @@ public class RecyclerViewAdapter_orders extends RecyclerView.Adapter<RecyclerVie
                             intent.putExtra("order_id", id_order);
                             intent.putExtra("user", user);
                             context.startActivity(intent);
+                            ((Activity)context).finish();
+
 
 
 

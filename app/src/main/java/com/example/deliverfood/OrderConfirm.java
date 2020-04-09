@@ -59,21 +59,25 @@ public class OrderConfirm extends AppCompatActivity {
     private DocumentReference documentReference;
 
 
+    List<Order_item_template> itemlist = new ArrayList<>();
+
     private String EATERY_ID = "eatery_id";
     private String EATERY_NAME = "eatery_name";
     private String ORDER_TIME = "order_time";
     private String TOTAL = "total";
 
     private Location currentLocation;
-
+    String order_id;
     private String TAG = "OrderConfirm";
     TextView tv, tv1, tv2, tv3, tv4;
     ListView ls;
 
     FirebaseUser user;
 
+    boolean temp = true;
 
 
+    OrderAdapter orderAdapter;
 
     private FusedLocationProviderClient fusedLocationProviderClient;
 
@@ -109,26 +113,13 @@ public class OrderConfirm extends AppCompatActivity {
 
 
 
+
         getLocation();
         user = getIntent().getParcelableExtra("user");
 
-        final String order_id = getIntent().getExtras().getString("order_id");
+        order_id = getIntent().getExtras().getString("order_id");
         tv.append(order_id);
         documentReference = collectionReference.document(order_id);
-
-
-
-        Map temp = new HashMap();
-        SecureRandom random = new SecureRandom();
-        int num = random.nextInt(100000);
-        String order_code = String.format("%05d", num);
-        temp.put("order_code", order_code);
-        documentReference.set(temp, SetOptions.merge());
-
-
-
-
-
         documentReference.get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
             @Override
             public void onSuccess(DocumentSnapshot documentSnapshot) {
@@ -138,7 +129,6 @@ public class OrderConfirm extends AppCompatActivity {
                 Timestamp timestamp = (Timestamp) documentSnapshot.get(ORDER_TIME);
                 tv3.append(timestamp.toDate().toString());
                 Map<String, Double> map = (Map<String, Double>) documentSnapshot.get("order");
-                List<String> list = new ArrayList<String>();
                 String name;
                 int count;
                 double price;
@@ -146,18 +136,19 @@ public class OrderConfirm extends AppCompatActivity {
                 for(String s:map.keySet())
                 {
 
+
                     iend = s.indexOf("$");
                     name = s.substring(0,iend);
                     price = Double.parseDouble(s.substring(iend+1));
                     count = (int)Double.parseDouble(map.get(s).toString());
-                    String fin =  name+" \n "+"Price: "+price+" \n "+"Count: " + count;
+                    itemlist.add(new Order_item_template(name,price, count, price*count));
 
-                    list.add(fin);
 
                 }
 
-                ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(OrderConfirm.this, android.R.layout.simple_expandable_list_item_1 , list);
-                ls.setAdapter(arrayAdapter);
+                orderAdapter = new OrderAdapter(OrderConfirm.this, R.layout.list_order_items, itemlist);
+                 ls.setAdapter(orderAdapter);
+
 
 
 
@@ -237,14 +228,8 @@ public class OrderConfirm extends AppCompatActivity {
                     {
 
                         tv4.setText("Order Confirmed!");
-//                        Toast.makeText(OrderConfirm.this, documentSnapshot.get("confirm").toString(), Toast.LENGTH_SHORT).show();
+                        funcAct();
 
-
-                        Intent intent = new Intent(OrderConfirm.this, Deliver_Ordered.class);
-                        intent.putExtra("user", user);
-                        intent.putExtra("order_id",order_id);
-                        startActivity(intent);
-                        finish();
                     }
 
 
@@ -254,6 +239,22 @@ public class OrderConfirm extends AppCompatActivity {
                 }
             }
         });
+
+    }
+
+    public void funcAct()
+    {
+        if(temp)
+        {
+            Intent intent = new Intent(OrderConfirm.this, Deliver_Ordered.class);
+            intent.putExtra("user", user);
+            intent.putExtra("order_id",order_id);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+            startActivity(intent);
+            finish();
+            temp=false;
+        }
 
     }
 
@@ -288,12 +289,16 @@ public class OrderConfirm extends AppCompatActivity {
             {
                 FirebaseAuth.getInstance().signOut();
                 Intent intent = new Intent(this, MainActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+
                 startActivity(intent);
                 finish();
             }
             case R.id.Home:
             {
                 Intent intent = new Intent(this, MainActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+
                 startActivity(intent);
                 finish();
             }

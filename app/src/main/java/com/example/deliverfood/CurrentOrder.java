@@ -6,7 +6,9 @@ import com.google.firebase.firestore.IgnoreExtraProperties;
 import com.google.firebase.firestore.ServerTimestamp;
 
 
+import java.security.SecureRandom;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 
 
@@ -29,6 +31,7 @@ public class CurrentOrder {
     public String user_email;
     public String user_phone;
     public Boolean order_delivered;
+    public String order_code;
 
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
 
@@ -48,6 +51,11 @@ public class CurrentOrder {
         this.user_email = user_email;
         this.user_phone = phone;
         this.order_delivered = false;
+
+        SecureRandom random = new SecureRandom();
+        int num = random.nextInt(100000);
+        this.order_code = String.format("%05d", num);
+
     }
 
 

@@ -152,14 +152,11 @@ public class DeliverOrOrder extends AppCompatActivity {
                                     Intent intent = new Intent(DeliverOrOrder.this, Deliver_Confirmed.class);
                                     intent.putExtra("user", user);
                                     intent.putExtra("order_id", documentSnapshot.getId());
+                                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                                    intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
                                     Toast.makeText(DeliverOrOrder.this, "Complete your previous order!", Toast.LENGTH_SHORT).show();
                                     startActivity(intent);
 
-                                }
-                                else {
-                                    Intent intent = new Intent(DeliverOrOrder.this, Delivery_orders.class);
-                                    intent.putExtra("user", user);
-                                    startActivity(intent);
                                 }
 
                         }

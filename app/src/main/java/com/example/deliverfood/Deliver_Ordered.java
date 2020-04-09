@@ -69,8 +69,10 @@ public class Deliver_Ordered extends AppCompatActivity{
     private DocumentReference documentReference;
 
     LocationManager locationManager;
+    List<Order_item_template> item_listt = new ArrayList<>();
+    OrderAdapter adapter;
 
-    private TextView tv,tv1,tv2, tv3, tv4, tv5, tv6;
+    private TextView tv,tv1,tv2, tv3, tv4, tv5, tv6, tv7;
     Map<String, Double> order = new HashMap<>();
     ListView ls;
     String uid;
@@ -90,6 +92,7 @@ public class Deliver_Ordered extends AppCompatActivity{
 
     boolean discount = false;
 
+    double total;
     String message1;
 
     FirebaseUser user;
@@ -105,6 +108,7 @@ public class Deliver_Ordered extends AppCompatActivity{
         user = getIntent().getParcelableExtra("user");
 
 
+
         tv = findViewById(R.id.textView22);
         tv1 = findViewById(R.id.textView25);
         tv2 = findViewById(R.id.textView33);
@@ -114,7 +118,7 @@ public class Deliver_Ordered extends AppCompatActivity{
         btn = findViewById(R.id.button11);
         tv5 = findViewById(R.id.textView36);
         tv6 = findViewById(R.id.textView40);
-
+        tv7 = findViewById(R.id.textView47);
 
 
 
@@ -152,7 +156,7 @@ public class Deliver_Ordered extends AppCompatActivity{
 
                 order = (Map<String, Double>) documentSnapshot.get("order");
 
-                final float total = Float.parseFloat(documentSnapshot.get("total").toString());
+               total = Float.parseFloat(documentSnapshot.get("total").toString());
 
 
                 FirebaseFirestore.getInstance().collection("Users").document(uid).get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
@@ -215,6 +219,7 @@ public class Deliver_Ordered extends AppCompatActivity{
                         String name;
                         int count;
                         Double price;
+                        int total_count = 0;
                         String fin;
 
                         tv5.setText("Order ID - " + order_id);
@@ -232,38 +237,41 @@ public class Deliver_Ordered extends AppCompatActivity{
                             fin =  name+"\n" +  getString(R.string.tab) +"Price : "+price+"\n"+  getString(R.string.tab) +"Count : " + count;
 
 
-                            list.add(fin);
+
                             total1 = (float)(price*count);
 
                             message1 = message1 + "\n " + fin;
+                            total_count=total_count+count;
 
-                            item_list.add(fin);
+                            item_listt.add(new Order_item_template(name, price, count, price*count));
+
 
                         }
-                        list.add("Total = " + total);
 
-                        list.add("Total = " + total);
                         int percentage_surge = (int)(((total-total1)*100)/(total1));
 
-                        list.add("\n NOTE: \n"+ percentage_surge +"% was added due to large distance between user and the eatery!\n");
+                        tv7.setText("NOTE: \n"+ percentage_surge +"% was added due to large distance between user and the eatery!\n");
 
                         if(discount)
                         {
-                            list.add("-----DISCOUNT APPLIED 20%-----");
-                            Toast.makeText(Deliver_Ordered.this, "Discount Applied, we care for our regular customers!!", Toast.LENGTH_SHORT).show();
-                            list.add("Final Total = " + total *0.8);
-                            list.add(0, "Final Total = " + total *0.8);
+                            total = total*0.8;
+                            tv7.append("\nDiscount Applied = 20% " + "\nFINAL TOTAL = " + total);
+
                         }
                         else
                         {
-                            list.add("NO DISCOUNT AVAILABLE :(");
+                            tv7.append("\nNo discount available!");
                         }
 
 
 
+                        item_listt.add(new Order_item_template("Final Total",total, total_count, total ));
+
 
                         ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(Deliver_Ordered.this, android.R.layout.simple_list_item_1, list );
-                        ls.setAdapter(arrayAdapter);
+                        adapter = new OrderAdapter(Deliver_Ordered.this, R.layout.list_order_items, item_listt);
+                        ls.setAdapter(adapter);
+
                     }
 
 

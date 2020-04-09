@@ -48,7 +48,7 @@ import java.util.Map;
 public class Deliver_Confirmed extends AppCompatActivity implements ExampleDialog.ExampleDialogListener {
 
     private String USER_LIST = "Users", id;
-    TextView tv,tv1,tv2,tv3,tv4, tv5;
+    TextView tv,tv1,tv2,tv3,tv4, tv5, tv6;
     String order_id;
     FirebaseUser user;
     ListView ls;
@@ -59,6 +59,9 @@ public class Deliver_Confirmed extends AppCompatActivity implements ExampleDialo
 
     FusedLocationProviderClient fusedLocationProviderClient;
 
+    List<Order_item_template> item_list = new ArrayList<>();
+    OrderAdapter adapter;
+
     Map<String, Double> order = new HashMap<>();
     String uid="default";
 
@@ -67,9 +70,11 @@ public class Deliver_Confirmed extends AppCompatActivity implements ExampleDialo
 
     boolean discount = false;
 
-    List<String> item_list = new ArrayList<>();
+    List<String> item_listt = new ArrayList<>();
 
     String user_name, user_email;
+    double total;
+    int total_count = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -82,8 +87,9 @@ public class Deliver_Confirmed extends AppCompatActivity implements ExampleDialo
         tv1 = findViewById(R.id.textView26);
         tv2 = findViewById(R.id.textView31);
         tv3 = findViewById(R.id.textView30);
-        tv4 = findViewById(R.id.textView32);
+        tv4 = findViewById(R.id.textView45);
         tv5 = findViewById(R.id.textView38);
+        tv6 = findViewById(R.id.note);
         btn = findViewById(R.id.button10);
         ls = findViewById(R.id.listView22);
         confirm_btn = findViewById(R.id.button);
@@ -128,7 +134,7 @@ public class Deliver_Confirmed extends AppCompatActivity implements ExampleDialo
                 order = (Map<String, Double>) documentSnapshot.get("order");
 
 
-                final float total = Float.parseFloat(documentSnapshot.get("total").toString());
+                total = Float.parseFloat(documentSnapshot.get("total").toString());
 
                 FirebaseFirestore.getInstance().collection("Users").document(uid).get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
                     @Override
@@ -192,7 +198,7 @@ public class Deliver_Confirmed extends AppCompatActivity implements ExampleDialo
                         String name;
                         int count;
                         Double price;
-                        String fin;
+
                         float total1=0;
                         for(String s:order.keySet())
                         {
@@ -200,38 +206,30 @@ public class Deliver_Confirmed extends AppCompatActivity implements ExampleDialo
                             name = s.substring(0,iend);
                             price = Double.parseDouble(s.substring(iend+1));
                             count = (int)Double.parseDouble(order.get(s).toString());
-                            fin =  name+"\n" +  getString(R.string.tab) +"Price : "+price+"\n"+  getString(R.string.tab) +"Count : " + count;
-                            list.add(fin);
+
                             total1 =  total1 + (float)(price*count);
-                            item_list.add(fin);
+                            item_list.add(new Order_item_template(name, price, count, price*count));
+
+                            total_count = total_count + count;
                         }
-                        list.add("Total = " + total);
+
                         int percentage_surge = (int)(((total-total1)*100)/(total1));
 
-                        list.add("\n NOTE: \n"+ percentage_surge +"% was added due to large distance between user and the eatery!\n");
+                        tv6.setText("NOTE: \n"+ percentage_surge +"% was added due to large distance between user and the eatery!");
 
                         if(discount)
                         {
-                            list.add("-----DISCOUNT APPLIED 20%-----");
-                            Toast.makeText(Deliver_Confirmed.this, "Discount Applied, we care for our regular customers!!", Toast.LENGTH_SHORT).show();
-                            list.add("Final Total : " + total *0.8 );
-                            list.add(0,"Final Total = " + total *0.8);
-                            list.add(1, "------------- Details --------------");
-
+                            total = total*0.8;
+                            tv6.append("\nDiscount Applied = 20% "+ "\nFINAL TOTAL = " + total);
 
                         }
                         else
                         {
-
-                            list.add("NO DISCOUNT AVAILABLE :(");
-                            list.add(0,"Final Total : " + total);
-                            list.add(1, "------------- Details --------------");
-
-
+                            tv6.append("\nNo discount available!");
                         }
-
-                        ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(Deliver_Confirmed.this, android.R.layout.simple_list_item_1, list );
-                        ls.setAdapter(arrayAdapter);
+                        item_list.add(new Order_item_template("Final Total",total, total_count, total ));
+                         adapter = new OrderAdapter(Deliver_Confirmed.this, R.layout.list_order_items, item_list);
+                        ls.setAdapter(adapter);
                         tv.append(order_id);
 
                     }
@@ -303,12 +301,14 @@ public class Deliver_Confirmed extends AppCompatActivity implements ExampleDialo
             {
                 FirebaseAuth.getInstance().signOut();
                 Intent intent = new Intent(this, MainActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 startActivity(intent);
                 finish();
             }
             case R.id.Home:
             {
                 Intent intent = new Intent(this, MainActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 startActivity(intent);
                 finish();
             }
@@ -381,15 +381,15 @@ public class Deliver_Confirmed extends AppCompatActivity implements ExampleDialo
                     map.put("order_delivered", true);
                     FirebaseFirestore.getInstance().collection("Current_Orders").document(order_id).set(map, SetOptions.merge());
                     Intent intent = new Intent(Deliver_Confirmed.this, MainActivity.class);
-                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+
                     Toast.makeText(Deliver_Confirmed.this, "Order Delivered!", Toast.LENGTH_SHORT).show();
 
                     String message;
                     message = "Dear "+user.getDisplayName() + ","+"\nYou have delivered the order of " + user_name
                             + " ( " + user_email + " )"+ "\nOrderID: " +   order_id + "\n Order Detail-";
-                    for(String s:item_list)
+                    for(String s1:item_listt)
                     {
-                        message = message + "\n" + s;
+                        message = message + "\n" + s1;
                     }
 
                     message = message + "\nRegards, \nFoodDeliver";
@@ -398,6 +398,7 @@ public class Deliver_Confirmed extends AppCompatActivity implements ExampleDialo
                     SendMail sm = new SendMail(Deliver_Confirmed.this, user.getEmail(), "Order Delivered", message);
                     sm.execute();
 
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                     startActivity(intent);
                     finish();
                 }

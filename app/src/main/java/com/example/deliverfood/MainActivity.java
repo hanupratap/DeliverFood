@@ -59,9 +59,6 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.SetOptions;
 
-import org.w3c.dom.Text;
-
-import java.net.Inet4Address;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -348,10 +345,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 });
 
         LoginManager.getInstance().logOut();
-
-
-
-
     }
 
     @Override
@@ -359,11 +352,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         super.onStart();
         // Check if user is signed in (non-null) and update UI accordingly.
         FirebaseUser currentUser = mAuth.getCurrentUser();
-
         updateUI(currentUser);
-
-
-
         requestLocation();
     }
 

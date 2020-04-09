@@ -17,7 +17,7 @@
         android:background="@drawable/white_border"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        android:backgroundTint="#FF4400"
+        android:backgroundTint="#E36F45"
         app:layout_constraintTop_toBottomOf="@+id/textView9"
         android:textSize="18sp"
          />

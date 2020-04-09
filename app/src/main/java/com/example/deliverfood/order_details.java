@@ -33,6 +33,7 @@ import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnCompleteListener;
 
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 
 import com.google.firebase.auth.FirebaseAuth;
@@ -60,10 +61,11 @@ import io.paperdb.Paper;
 public class order_details extends AppCompatActivity implements Serializable {
  
 
-    private TextView tv;
+    private TextView tv, tv9;
     private TextView tv1;
     private ListView ls;
 
+    int i=0;
 
     private FusedLocationProviderClient fusedLocationProviderClient;
 
@@ -86,6 +88,10 @@ public class order_details extends AppCompatActivity implements Serializable {
     float[] dist = new float[10];
     GeoPoint gp;
 
+    OrderAdapter adapter;
+
+    List<Order_item_template> itemlist = new ArrayList<>();
+
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
     private CollectionReference collectionReference = db.collection(CURRENT_ORDERS);
 
@@ -100,6 +106,7 @@ public class order_details extends AppCompatActivity implements Serializable {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_order_details);
 
+        tv9 = findViewById(R.id.textView44);
 
         final Double lat = getIntent().getExtras().getDouble("eatery_location_latitude");
         final Double lon = getIntent().getExtras().getDouble("eatery_location_longitude");
@@ -138,6 +145,8 @@ public class order_details extends AppCompatActivity implements Serializable {
                 list.add(d);
                 ordered_items.add(String.valueOf(d.items)+ " " + d.name + " @ Rs." + String.valueOf(d.price) );
                 total += d.price*d.items;
+
+                itemlist.add(new Order_item_template(d.name, d.price, d.items, d.price*d.items));
 
             }
 
@@ -206,21 +215,21 @@ public class order_details extends AppCompatActivity implements Serializable {
                 user_info.put("user_email", FirebaseAuth.getInstance().getCurrentUser().getEmail());
                 FirebaseFirestore.getInstance().collection("Users").document(FirebaseAuth.getInstance().getCurrentUser().getUid()).set(user_info, SetOptions.merge());
 
-                collectionReference.add(currentOrder).addOnCompleteListener(new OnCompleteListener<DocumentReference>() {
+                Toast.makeText(order_details.this, String.valueOf(i++), Toast.LENGTH_SHORT).show();
+                collectionReference.add(currentOrder).addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
                     @Override
-                    public void onComplete(@NonNull Task<DocumentReference> task) {
+                    public void onSuccess(DocumentReference documentReference) {
                         Toast.makeText(order_details.this, "Success", Toast.LENGTH_SHORT).show();
                         progressDialog.dismiss();
                         Intent intent = new Intent(order_details.this, OrderConfirm.class);
-                        String id = task.getResult().getId();
-                        intent.putExtra("order_id", id);
-                        intent.putExtra("user",getIntent().getParcelableExtra("user"));
-
+                        intent.putExtra("order_id", documentReference.getId());
+                        intent.putExtra("user", user);
                         startActivity(intent);
                         finish();
-
                     }
                 });
+
+
 
 
             }
@@ -261,22 +270,27 @@ public class order_details extends AppCompatActivity implements Serializable {
                         if(dist[0]<20.0*1000 && dist[0]>10.0*1000)
                         {
                             total = total*1.05;
-                            ordered_items.add("\nNOTE: \n5% added due to large distance between you and the eatery!\n");
+
+                            tv9.setText("\nNOTE: \n5% added due to large distance between you and the eatery!\n");
+
                         }
                         else if(dist[0]<20.0*1000)
                         {
                             total = total*1.1;
-                            ordered_items.add("\n NOTE: \n10% added due to large distance between you and the eatery!\n");
+
+                            tv9.setText("\nNOTE: \n10% added due to large distance between you and the eatery!\n");
                         }
                         else if(dist[0]<40.0*1000)
                         {
                             total = total*1.15;
-                            ordered_items.add("\n NOTE: \n15% added due to large distance between you and the eatery!\n");
+
+                            tv9.setText("\nNOTE: \n15% added due to large distance between you and the eatery!\n");
                         }
                         else
                         {
                             total = total*1.2;
-                            ordered_items.add("\n NOTE: \n20% added due to large distance between you and the eatery!\n");
+
+                            tv9.setText("\nNOTE: \n20% added due to large distance between you and the eatery!\n");
                         }
 
 
@@ -284,8 +298,13 @@ public class order_details extends AppCompatActivity implements Serializable {
                     tv1.append(String.valueOf(total));
 
 
+                    adapter = new OrderAdapter(order_details.this, R.layout.list_order_items, itemlist);
+                    ls.setAdapter(adapter);
 
-                    ls.setAdapter(ordered_items);
+
+
+
+
                 }
             });
         }
@@ -323,12 +342,14 @@ public class order_details extends AppCompatActivity implements Serializable {
             {
                 FirebaseAuth.getInstance().signOut();
                 Intent intent = new Intent(this, MainActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 startActivity(intent);
                 finish();
             }
             case R.id.Home:
             {
                 Intent intent = new Intent(this, MainActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 startActivity(intent);
                 finish();
             }

@@ -6,6 +6,22 @@
     android:layout_height="match_parent"
     tools:context=".Deliver_Ordered">
 
+
+    <TextView
+        android:id="@+id/textView47"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="10dp"
+        android:background="@drawable/white_border"
+        android:padding="5dp"
+        android:text="Discount -"
+
+        android:textSize="12dp"
+        app:layout_constraintBottom_toTopOf="@+id/textView27"
+
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
     <TextView
         android:id="@+id/textView35"
         android:layout_width="fill_parent"
@@ -66,9 +82,6 @@
 
         android:textSize="18dp"
         android:padding="10dp"
-
-
-
         />
 
     <TextView
@@ -82,7 +95,7 @@
 
         android:textSize="14dp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.473"
+
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/textView22" />
 
@@ -98,7 +111,7 @@
         android:textSize="14dp"
         app:layout_constraintBottom_toTopOf="@+id/textView35"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.526"
+
         app:layout_constraintStart_toStartOf="parent" />
 
     <TextView
@@ -120,11 +133,11 @@
         android:layout_width="fill_parent"
         android:layout_height="0dp"
         android:layout_margin="10dp"
-        app:layout_constraintBottom_toTopOf="@+id/textView27"
-        app:layout_constraintEnd_toEndOf="parent"
         android:background="@drawable/white_border"
-        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/textView47"
+        app:layout_constraintEnd_toEndOf="parent"
 
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/textView36" />
 
     <Button
