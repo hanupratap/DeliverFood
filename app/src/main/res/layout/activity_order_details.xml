@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".order_details"
+
+    >
+
+
+    <TextView
+        android:id="@+id/textView6"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="10dp"
+        android:padding="10dp"
+        android:text="Billing Information"
+        android:textColor="@color/quantum_bluegrey300"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        
+
+        />
+
+
+
+
+
+    <ListView
+        android:id="@+id/listView22"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_margin="10dp"
+        android:layout_marginHorizontal="10dp"
+
+        android:background="@drawable/white_border"
+
+        app:layout_constraintBottom_toTopOf="@+id/textView7"
+        app:layout_constraintTop_toBottomOf="@+id/textView6"
+
+        tools:layout_editor_absoluteX="10dp" />
+
+    <TextView
+        android:id="@+id/textView7"
+        android:layout_width="fill_parent"
+
+        android:layout_height="wrap_content"
+        android:layout_margin="10dp"
+        android:layout_marginHorizontal="10dp"
+
+
+        android:padding="10dp"
+        android:text="Total - "
+        android:background="@drawable/white_border"
+        android:backgroundTint="@color/quantum_white_text"
+
+
+        android:textSize="18sp"
+        android:textStyle="italic"
+        app:layout_constraintBottom_toTopOf="@+id/button5"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <Button
+        android:id="@+id/button5"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="10dp"
+        android:background="@drawable/white_border"
+
+        android:textColor="@color/quantum_white_text"
+        android:padding="10dp"
+        android:text="Confirm order"
+        android:backgroundTint="@color/quantum_googblue"
+        app:layout_constraintBottom_toBottomOf="parent"
+
+
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+</androidx.constraintlayout.widget.ConstraintLayout>
