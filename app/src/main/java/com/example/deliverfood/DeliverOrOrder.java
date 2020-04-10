@@ -133,7 +133,7 @@ public class DeliverOrOrder extends AppCompatActivity {
         btn = findViewById(R.id.button6);
         btn2 = findViewById(R.id.button7);
 
-        user = getIntent().getExtras().getParcelable("user");
+        user = FirebaseAuth.getInstance().getCurrentUser();
 
 
         btn.setOnClickListener(new View.OnClickListener() {
@@ -146,8 +146,9 @@ public class DeliverOrOrder extends AppCompatActivity {
                     public void onSuccess(QuerySnapshot queryDocumentSnapshots) {
                         for(QueryDocumentSnapshot documentSnapshot:queryDocumentSnapshots)
                         {
+                            boolean temp = false;
 
-                                if(queryDocumentSnapshots!=null)
+                                if(documentSnapshot!=null)
                                 {
                                     Intent intent = new Intent(DeliverOrOrder.this, Deliver_Confirmed.class);
                                     intent.putExtra("user", user);
@@ -156,11 +157,11 @@ public class DeliverOrOrder extends AppCompatActivity {
                                     intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
                                     Toast.makeText(DeliverOrOrder.this, "Complete your previous order!", Toast.LENGTH_SHORT).show();
                                     startActivity(intent);
-
+                                    finish();
+                                    return;
                                 }
 
                         }
-
 
                     }
                 }).addOnFailureListener(new OnFailureListener() {
@@ -170,13 +171,10 @@ public class DeliverOrOrder extends AppCompatActivity {
                     }
                 });
 
-
-                    Intent intent = new Intent(DeliverOrOrder.this, Delivery_orders.class);
-                    intent.putExtra("user", user);
-                    startActivity(intent);
-
-
-
+                Intent intent = new Intent(DeliverOrOrder.this, Delivery_orders.class);
+                startActivity(intent);
+                finish();
+                return;
 
 
 
@@ -190,8 +188,6 @@ public class DeliverOrOrder extends AppCompatActivity {
                 Intent intent = new Intent(DeliverOrOrder.this, SecondActivity.class);
                 intent.putExtra("user", user);
                 startActivity(intent);
-
-
             }
         });
     }

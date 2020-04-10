@@ -56,7 +56,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
+
 
 public class Deliver_Ordered extends AppCompatActivity{
 
@@ -65,10 +65,7 @@ public class Deliver_Ordered extends AppCompatActivity{
     private String order_id;
     private FusedLocationProviderClient fusedLocationProviderClient;
 
-    private FirebaseFirestore db = FirebaseFirestore.getInstance();
-    private DocumentReference documentReference;
 
-    LocationManager locationManager;
     List<Order_item_template> item_listt = new ArrayList<>();
     OrderAdapter adapter;
 
@@ -81,16 +78,17 @@ public class Deliver_Ordered extends AppCompatActivity{
     private String DELIVERY_PERSON_EMAIL = "delivery_person_email";
     GeoPoint mypos, gp;
 
-    String s0 ="",s1="",s2="", s3="";
     private Location currentLocation;
 
-    List<String> item_list = new ArrayList<>();
 
+    boolean temp = false;
     Button btn;
 
 
 
     boolean discount = false;
+
+
 
     double total;
     String message1;
@@ -130,19 +128,22 @@ public class Deliver_Ordered extends AppCompatActivity{
             public void onSuccess(DocumentSnapshot documentSnapshot) {
                 if( documentSnapshot.get("delivery_person_name")!=null)
                 {
-                    s0 = documentSnapshot.get("delivery_person_name").toString();
+                    tv.setText("Name :" + documentSnapshot.get("delivery_person_name").toString());
                 }
                 if(documentSnapshot.get("delivery_person_phone")!=null)
                 {
-                    s1 = documentSnapshot.get("delivery_person_phone").toString();
+
+                    tv1.setText("Phone :" + documentSnapshot.get("delivery_person_phone").toString());
                 }
                 if(documentSnapshot.get("eatery_name")!=null)
                 {
-                    s2 = documentSnapshot.get("eatery_name").toString();
+
+                    tv2.setText("Email: "+documentSnapshot.get("eatery_name").toString());
                 }
                 if(documentSnapshot.get("delivery_person_email")!=null)
                 {
-                    s3 = documentSnapshot.get("delivery_person_email").toString();
+
+                    tv3.setText("Eatery :" + documentSnapshot.get("delivery_person_email").toString());
                 }
                 if(documentSnapshot.getString("order_code")!=null)
                 {
@@ -156,16 +157,12 @@ public class Deliver_Ordered extends AppCompatActivity{
 
                 order = (Map<String, Double>) documentSnapshot.get("order");
 
-               total = Float.parseFloat(documentSnapshot.get("total").toString());
+               total = Float.parseFloat(String.format("%.3f",documentSnapshot.getDouble("total")));
 
 
                 FirebaseFirestore.getInstance().collection("Users").document(uid).get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
                     @Override
                     public void onSuccess(DocumentSnapshot documentSnapshot) {
-
-
-
-
                         Geocoder geocoder;
                         List<Address> addresses;
                         geocoder = new Geocoder(Deliver_Ordered.this, Locale.getDefault());
@@ -178,11 +175,7 @@ public class Deliver_Ordered extends AppCompatActivity{
                                 if(addresses.size()!=0)
                                 {
                                     String address = addresses.get(0).getAddressLine(0); // If any additional address line present than only, check with max available address lines by getMaxAddressLineIndex()
-//                                String city = addresses.get(0).getLocality();
-//                                String state = addresses.get(0).getAdminArea();
-//                                String country = addresses.get(0).getCountryName();
-//                                String postalCode = addresses.get(0).getPostalCode();
-//                                String knownName = addresses.get(0).getFeatureName(); // Only if available else return NULL
+
                                     tv4.setText("Address :" + address);
                                 }
                                      else
@@ -198,23 +191,11 @@ public class Deliver_Ordered extends AppCompatActivity{
                                             document(user.getUid()).set(a,SetOptions.merge());
 
                             }
-
-
-
-
                         } catch (IOException e) {
                             e.printStackTrace();
                             tv4.setText("Address Not Found :");
                         }
-
-
-
                         List<String> list = new ArrayList<>();
-                        tv.setText("Name :" + s0);
-                        tv1.setText("Phone :" + s1);
-                        tv2.setText("Email: "+s3);
-                        tv3.setText("Eatery :" + s2);
-
                         int iend;
                         String name;
                         int count;
@@ -244,8 +225,6 @@ public class Deliver_Ordered extends AppCompatActivity{
                             total_count=total_count+count;
 
                             item_listt.add(new Order_item_template(name, price, count, price*count));
-
-
                         }
 
                         int percentage_surge = (int)(((total-total1)*100)/(total1));
@@ -256,7 +235,6 @@ public class Deliver_Ordered extends AppCompatActivity{
                         {
                             total = total*0.8;
                             tv7.append("\nDiscount Applied = 20% " + "\nFINAL TOTAL = " + total);
-
                         }
                         else
                         {
@@ -282,10 +260,6 @@ public class Deliver_Ordered extends AppCompatActivity{
                         Toast.makeText(Deliver_Ordered.this, "Failed To Fetch Details", Toast.LENGTH_SHORT).show();
                     }
                 });
-
-
-
-
             }
         }).addOnFailureListener(new OnFailureListener() {
             @Override
@@ -295,54 +269,49 @@ public class Deliver_Ordered extends AppCompatActivity{
         });
 
 
-        FirebaseFirestore.getInstance().collection("Current_Orders").document(order_id).addSnapshotListener(new EventListener<DocumentSnapshot>() {
-            @Override
-            public void onEvent(@Nullable DocumentSnapshot documentSnapshot, @Nullable FirebaseFirestoreException e) {
-                if(e!=null)
-                {
-                    Toast.makeText(Deliver_Ordered.this, "Error" + e.toString(), Toast.LENGTH_SHORT).show();
-                }
-                else
-                {
-                    if(documentSnapshot!=null)
+            FirebaseFirestore.getInstance().collection("Current_Orders").document(order_id).addSnapshotListener(new EventListener<DocumentSnapshot>() {
+                @Override
+                public void onEvent(@Nullable DocumentSnapshot documentSnapshot, @Nullable FirebaseFirestoreException e) {
+                    if(e!=null)
                     {
-                        if(documentSnapshot.getBoolean("order_delivered")==true)
+                        Toast.makeText(Deliver_Ordered.this, "Error" + e.toString(), Toast.LENGTH_SHORT).show();
+                    }
+                    else
+                    {
+                        if(documentSnapshot!=null)
                         {
 
+                            if(documentSnapshot.getBoolean("order_delivered")==true)
+                            {
+                                String message;
+                                String delivery_name = documentSnapshot.getString("delivery_person_name");
+                                String delivery_email = documentSnapshot.getString("delivery_person_email");
+                                message = "Dear "+user.getDisplayName() + ","+"\nYour order has been delivered by " + delivery_name
+                                        + " ( " + delivery_email + " )"+ "\nOrderID: " +   order_id + "\n Order Detail-";
 
-                            FirebaseFirestore.getInstance().collection("Current_Orders").document(order_id).get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
-                                @Override
-                                public void onSuccess(DocumentSnapshot documentSnapshot) {
+                                message = message + message1;
+                                message = message + "\n Final Total(After adjustments) :" + String.valueOf(total);
 
-                                    String message;
-                                    String delivery_name = documentSnapshot.getString("delivery_person_name");
-                                    String delivery_email = documentSnapshot.getString("delivery_person_email");
-                                    message = "Dear "+user.getDisplayName() + ","+"\nYour order has been delivered by " + delivery_name
-                                            + " ( " + delivery_email + " )"+ "\nOrderID: " +   order_id + "\n Order Detail-";
-
-                                    message = message + message1;
-
-                                    message = message + "\nRegards, \nFoodDeliver";
+                                message = message + "\nRegards, \nFoodDeliver";
+                                Toast.makeText(Deliver_Ordered.this, String.valueOf(temp), Toast.LENGTH_SHORT).show();
 
 
-                                    SendMail sm = new SendMail(Deliver_Ordered.this, user.getEmail(), "Order Delivered", message);
-                                    sm.execute();
 
-                                    Toast.makeText(Deliver_Ordered.this, "Order Delivered", Toast.LENGTH_SHORT).show();
-                                    Intent intent = new Intent(Deliver_Ordered.this, MainActivity.class);
-                                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                                    startActivity(intent);
-                                    finish();
-                                }
-                            });
+                                Toast.makeText(Deliver_Ordered.this, "Order Delivered", Toast.LENGTH_SHORT).show();
+                                Intent intent = new Intent(Deliver_Ordered.this, OrderDeliverFinished.class);
+                                intent.putExtra("order_id", order_id);
+                                intent.putExtra("message", message);
+                                intent.putExtra("send_email", !temp);
+                                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                startActivity(intent);
+                                finish();
+                            }
 
                         }
+
                     }
                 }
-            }
-        });
-
-
+            });
 
 
 
@@ -357,8 +326,14 @@ public class Deliver_Ordered extends AppCompatActivity{
                 startActivity(intent);
             }
         });
+    }
 
 
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        temp = true;
+        this.finish();
     }
 
     @Override
@@ -369,18 +344,13 @@ public class Deliver_Ordered extends AppCompatActivity{
         {
             menu.findItem(R.id.user_info).setTitle(FirebaseAuth.getInstance().getCurrentUser().getDisplayName());
         }
-
         else
         {
             menu.findItem(R.id.user_info).setTitle("No User logged in");
             menu.findItem(R.id.user_info).setEnabled(false);
-
         }
-
         return super.onPrepareOptionsMenu(menu);
     }
-
-
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
 
@@ -406,11 +376,8 @@ public class Deliver_Ordered extends AppCompatActivity{
     }
 
     void getLocation() {
-
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
-
         try {
-
             fusedLocationProviderClient.getLastLocation().addOnCompleteListener(new OnCompleteListener() {
                 @Override
                 public void onComplete(@NonNull Task task) {
@@ -429,9 +396,6 @@ public class Deliver_Ordered extends AppCompatActivity{
 
                             }
                         }
-
-
-
                     }
                     else {
                         Toast.makeText(Deliver_Ordered.this, "Can't locate You!", Toast.LENGTH_SHORT).show();
@@ -446,20 +410,16 @@ public class Deliver_Ordered extends AppCompatActivity{
     }
 
 
+
     @Override
     protected void onStart() {
         super.onStart();
         getLocation();
-
     }
-
-
 
     @Override
     protected void onResume() {
         super.onResume();
         getLocation();
     }
-
-
 }

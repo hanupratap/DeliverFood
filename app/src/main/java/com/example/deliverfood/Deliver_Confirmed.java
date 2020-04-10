@@ -134,7 +134,7 @@ public class Deliver_Confirmed extends AppCompatActivity implements ExampleDialo
                 order = (Map<String, Double>) documentSnapshot.get("order");
 
 
-                total = Float.parseFloat(documentSnapshot.get("total").toString());
+                total = Float.parseFloat(String.format("%.3f",documentSnapshot.getDouble("total")));
 
                 FirebaseFirestore.getInstance().collection("Users").document(uid).get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
                     @Override
@@ -207,9 +207,9 @@ public class Deliver_Confirmed extends AppCompatActivity implements ExampleDialo
                             price = Double.parseDouble(s.substring(iend+1));
                             count = (int)Double.parseDouble(order.get(s).toString());
 
+                            item_listt.add(name+"\n" +  getString(R.string.tab) +"Price : "+price+"\n"+  getString(R.string.tab) +"Count : " + count);
                             total1 =  total1 + (float)(price*count);
                             item_list.add(new Order_item_template(name, price, count, price*count));
-
                             total_count = total_count + count;
                         }
 
@@ -260,17 +260,8 @@ public class Deliver_Confirmed extends AppCompatActivity implements ExampleDialo
                 intent.putExtra("uid", uid);
                 startActivity(intent);
 
-
             }
         });
-
-
-
-
-
-
-
-
     }
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -328,16 +319,11 @@ public class Deliver_Confirmed extends AppCompatActivity implements ExampleDialo
                 public void onComplete(@NonNull Task task) {
                     if (task.isSuccessful()) {
                         currentLocation = (Location) task.getResult();
-
-
-
                         if(currentLocation!=null)
                         {
                             mypos = new GeoPoint(currentLocation.getLatitude(), currentLocation.getLongitude());
-
                             user_instance.put("delivery_person_id", id);
                             user_instance.put("delivery_person_location",mypos);
-
                             FirebaseFirestore.getInstance().collection(USER_LIST).document(uid).set(user_instance, SetOptions.merge());
                         }
 
@@ -352,10 +338,17 @@ public class Deliver_Confirmed extends AppCompatActivity implements ExampleDialo
         }
     }
 
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        Deliver_Confirmed.this.finish();
+        Deliver_Confirmed.this.startActivity(new Intent(Deliver_Confirmed.this, DeliverOrOrder.class));
+    }
 
     @Override
     protected void onStart() {
         super.onStart();
+
         getLocation();
     }
 
@@ -363,11 +356,8 @@ public class Deliver_Confirmed extends AppCompatActivity implements ExampleDialo
     protected void onResume() {
         super.onResume();
         getLocation();
+
     }
-
-
-
-
 
 
     @Override
@@ -391,13 +381,11 @@ public class Deliver_Confirmed extends AppCompatActivity implements ExampleDialo
                     {
                         message = message + "\n" + s1;
                     }
-
+                    message = message + "\n Final Total(After adjustments) :" + String.valueOf(total);
                     message = message + "\nRegards, \nFoodDeliver";
 
-
-                    SendMail sm = new SendMail(Deliver_Confirmed.this, user.getEmail(), "Order Delivered", message);
-                    sm.execute();
-
+                        SendMail sm = new SendMail(Deliver_Confirmed.this, user.getEmail(), "Order Delivered", message);
+                        sm.execute();
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                     startActivity(intent);
                     finish();

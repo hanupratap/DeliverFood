@@ -31,6 +31,8 @@ public class CurrentOrders extends AppCompatActivity {
     ArrayAdapter<String> adapter;
     ListView ls;
     List<String> order_ids = new ArrayList<>();
+    boolean temp = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -59,24 +61,35 @@ public class CurrentOrders extends AppCompatActivity {
                 FirebaseFirestore.getInstance().collection("Current_Orders").document(order_ids.get(position)).get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
                     @Override
                     public void onSuccess(DocumentSnapshot documentSnapshot) {
-                        if(documentSnapshot.getBoolean("confirm")==false)
+                        if(documentSnapshot.getBoolean("confirm")==false && documentSnapshot.getBoolean("email_sent_delivery")==false)
                         {
-                            Intent intent = new Intent(CurrentOrders.this, OrderConfirm.class);
-                            intent.putExtra("user", FirebaseAuth.getInstance().getCurrentUser());
-                            intent.putExtra("order_id", documentSnapshot.getId());
-                            startActivity(intent);
-                            finish();
 
+                            if(!temp)
+                            {
+                                Intent intent = new Intent(CurrentOrders.this, OrderConfirm.class);
+                                intent.putExtra("user", FirebaseAuth.getInstance().getCurrentUser());
+                                intent.putExtra("order_id", documentSnapshot.getId());
+                                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                                intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                                startActivity(intent);
+                                finish();
+                                temp = true;
+                            }
                         }
                         else
                         {
-                            Intent intent = new Intent(CurrentOrders.this, Deliver_Ordered.class);
-                            intent.putExtra("user",  FirebaseAuth.getInstance().getCurrentUser());
-                            intent.putExtra("order_id", documentSnapshot.getId());
-                            intent.putExtra("uid",  FirebaseAuth.getInstance().getCurrentUser().getUid());
-                            startActivity(intent);
-                            finish();
-
+                            if(!temp)
+                            {
+                                Intent intent = new Intent(CurrentOrders.this, Deliver_Ordered.class);
+                                intent.putExtra("user",  FirebaseAuth.getInstance().getCurrentUser());
+                                intent.putExtra("order_id", documentSnapshot.getId());
+                                intent.putExtra("uid",  FirebaseAuth.getInstance().getCurrentUser().getUid());
+                                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                                intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                                startActivity(intent);
+                                finish();
+                                temp = true;
+                            }
                         }
                     }
                 });
@@ -104,6 +117,7 @@ public class CurrentOrders extends AppCompatActivity {
     }
 
 
+
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
 
@@ -114,7 +128,6 @@ public class CurrentOrders extends AppCompatActivity {
                 FirebaseAuth.getInstance().signOut();
                 Intent intent = new Intent(this, MainActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-
                 startActivity(intent);
                 finish();
             }
@@ -122,12 +135,9 @@ public class CurrentOrders extends AppCompatActivity {
             {
                 Intent intent = new Intent(this, MainActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-
                 startActivity(intent);
                 finish();
             }
-
-
         }
         return super.onOptionsItemSelected(item);
     }

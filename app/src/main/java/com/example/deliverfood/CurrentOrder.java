@@ -32,6 +32,8 @@ public class CurrentOrder {
     public String user_phone;
     public Boolean order_delivered;
     public String order_code;
+    public boolean email_sent_user;
+    public boolean email_sent_delivery;
 
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
 
@@ -51,7 +53,8 @@ public class CurrentOrder {
         this.user_email = user_email;
         this.user_phone = phone;
         this.order_delivered = false;
-
+        this.email_sent_user = false;
+        this.email_sent_delivery = false;
         SecureRandom random = new SecureRandom();
         int num = random.nextInt(100000);
         this.order_code = String.format("%05d", num);

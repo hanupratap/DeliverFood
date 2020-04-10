@@ -3,9 +3,13 @@ package com.example.deliverfood;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.hardware.biometrics.BiometricPrompt;
 import android.location.Location;
+import android.os.Build;
+import android.os.CancellationSignal;
 import android.speech.tts.TextToSpeech;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -19,6 +23,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -39,6 +44,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 public class RecyclerViewAdapter_orders extends RecyclerView.Adapter<RecyclerViewAdapter_orders.MyViewHolder>  {
     List name, totals, order_id, ditance;
@@ -60,7 +67,6 @@ public class RecyclerViewAdapter_orders extends RecyclerView.Adapter<RecyclerVie
 
     private String COLLECTION_NAME = "Current_Orders";
     private String CONFIRM = "confirm";
-    String user_id;
 
 
     private int item_count = 0;
@@ -151,6 +157,7 @@ public class RecyclerViewAdapter_orders extends RecyclerView.Adapter<RecyclerVie
 
     }
 
+    ProgressDialog progressDialog;
     @Override
     public int getItemCount() {
         return name.size();
@@ -173,73 +180,101 @@ public class RecyclerViewAdapter_orders extends RecyclerView.Adapter<RecyclerVie
             btn = itemView.findViewById(R.id.button8);
 
             btn.setOnClickListener(new View.OnClickListener() {
+                @RequiresApi(api = Build.VERSION_CODES.P)
                 @Override
                 public void onClick(View v) {
 
 
-                    final ProgressDialog progressDialog;
-                    progressDialog = new ProgressDialog(context);
-                    progressDialog.show();
-                    progressDialog.setContentView(R.layout.progress_dialog);
-                    progressDialog.getWindow().setBackgroundDrawableResource(
-                            android.R.color.transparent
-                    );
 
-                    getLocation();
-                    id_order = mytext3.getText().toString();
+                    Executor executor = Executors.newSingleThreadExecutor();
 
+                    BiometricPrompt biometricPrompt = new BiometricPrompt.Builder(context)
+                            .setTitle("Fingerprint Authentication")
+                            .setSubtitle("Authorize Order")
+                            .setDescription("Order ID : "+ order_id)
+                            .setNegativeButton("Cancel", executor, new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialogInterface, int i) {
+                                 }
+                            }).build();
 
-
-
-
-                    final DocumentReference documentReference = FirebaseFirestore.getInstance().collection(COLLECTION_NAME).document(id_order);
-
-
-
-                    Map<String,String> map = new HashMap<>();
-                    map.put("delivery_person_name", user.getDisplayName());
-                    map.put("delivery_person_email",user.getEmail());
-                    map.put("delivery_person_phone",phone_number);
-
-
-
-                    Map mmap = new HashMap();
-                    mmap.put(CONFIRM, true);
-
-                    documentReference.set(mmap,SetOptions.merge()).addOnSuccessListener(new OnSuccessListener<Void>() {
+                    biometricPrompt.authenticate(new CancellationSignal(), executor, new BiometricPrompt.AuthenticationCallback() {
                         @Override
-                        public void onSuccess(Void aVoid) {
-                            progressDialog.dismiss();
-
-                            Toast.makeText(context, "Accepted", Toast.LENGTH_SHORT).show();
-                            Intent intent = new Intent(context, Deliver_Confirmed.class);
-                            intent.putExtra("order_id", id_order);
-                            intent.putExtra("user", user);
-                            context.startActivity(intent);
-                            ((Activity)context).finish();
+                        public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result) {
 
 
+                            ((Activity)context).runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    progressDialog = new ProgressDialog(context);
+                                    progressDialog.show();
+                                    progressDialog.setContentView(R.layout.progress_dialog);
+                                    progressDialog.getWindow().setBackgroundDrawableResource(
+                                            android.R.color.transparent
+                                    );
+
+                                    getLocation();
+                                    id_order = mytext3.getText().toString();
 
 
-                        }
-                    }).addOnFailureListener(new OnFailureListener() {
-                        @Override
-                        public void onFailure(@NonNull Exception e) {
-                            progressDialog.dismiss();
-                            Toast.makeText(context, "Error!, Can't accept this order now!", Toast.LENGTH_SHORT).show();
+
+
+
+                                    final DocumentReference documentReference = FirebaseFirestore.getInstance().collection(COLLECTION_NAME).document(id_order);
+
+
+
+                                    Map<String,String> map = new HashMap<>();
+                                    map.put("delivery_person_name", user.getDisplayName());
+                                    map.put("delivery_person_email",user.getEmail());
+                                    map.put("delivery_person_phone",phone_number);
+
+
+
+                                    Map mmap = new HashMap();
+                                    mmap.put(CONFIRM, true);
+
+                                    documentReference.set(mmap,SetOptions.merge()).addOnSuccessListener(new OnSuccessListener<Void>() {
+                                        @Override
+                                        public void onSuccess(Void aVoid) {
+                                            progressDialog.dismiss();
+
+                                            Toast.makeText(context, "Accepted", Toast.LENGTH_SHORT).show();
+                                            Intent intent = new Intent(context, Deliver_Confirmed.class);
+                                            intent.putExtra("order_id", id_order);
+                                            intent.putExtra("user", user);
+                                            context.startActivity(intent);
+                                            ((Activity)context).finish();
+
+
+
+
+                                        }
+                                    }).addOnFailureListener(new OnFailureListener() {
+                                        @Override
+                                        public void onFailure(@NonNull Exception e) {
+                                            progressDialog.dismiss();
+                                            Toast.makeText(context, "Error!, Can't accept this order now!", Toast.LENGTH_SHORT).show();
+
+                                        }
+                                    });
+
+
+                                    documentReference.set(map, SetOptions.merge()).addOnSuccessListener(new OnSuccessListener<Void>() {
+                                        @Override
+                                        public void onSuccess(Void aVoid) {
+                                            Toast.makeText(context, "Details sent to user!", Toast.LENGTH_SHORT).show();
+
+                                        }
+                                    });
+
+                                }
+                            });
+
+
 
                         }
                     });
-
-
-                    documentReference.set(map, SetOptions.merge()).addOnSuccessListener(new OnSuccessListener<Void>() {
-                        @Override
-                        public void onSuccess(Void aVoid) {
-                            Toast.makeText(context, "Details sent to user!", Toast.LENGTH_SHORT).show();
-
-                        }
-                    });
-
 
 
 

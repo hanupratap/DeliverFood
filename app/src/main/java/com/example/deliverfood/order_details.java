@@ -1,6 +1,7 @@
 package com.example.deliverfood;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -8,14 +9,19 @@ import androidx.core.content.ContextCompat;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.hardware.biometrics.BiometricPrompt;
 import android.location.Location;
+import android.os.Build;
 import android.os.Bundle;
 
 
+import android.os.CancellationSignal;
 import android.telephony.TelephonyManager;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -54,6 +60,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 
 import io.paperdb.Paper;
@@ -65,7 +73,6 @@ public class order_details extends AppCompatActivity implements Serializable {
     private TextView tv1;
     private ListView ls;
 
-    int i=0;
 
     private FusedLocationProviderClient fusedLocationProviderClient;
 
@@ -152,93 +159,109 @@ public class order_details extends AppCompatActivity implements Serializable {
 
         }
 
+        total = Double.parseDouble(String.format("%.3f", total));
 
 
         Intent intent = order_details.this.getIntent();
         final String eatery_id = intent.getStringExtra("eatery_id");
         final String eatery_name = intent.getStringExtra("eatery_name");
 
-
-
-
-
-
         Paper.init(order_details.this);
         Paper.book().destroy();
 
 
-
-
-
-
-
         confirm.setOnClickListener(new View.OnClickListener() {
+            @RequiresApi(api = Build.VERSION_CODES.P)
             @Override
             public void onClick(View v) {
 
-                progressDialog = new ProgressDialog(order_details.this);
-                progressDialog.show();
-                progressDialog.setContentView(R.layout.progress_dialog);
-                progressDialog.getWindow().setBackgroundDrawableResource(
-                        android.R.color.transparent
-                );
 
 
+                Executor executor = Executors.newSingleThreadExecutor();
 
+                BiometricPrompt biometricPrompt = new BiometricPrompt.Builder(order_details.this)
+                        .setTitle("Fingerprint Authentication")
+                        .setSubtitle("Authorize Order")
+                        .setDescription("Your order Total : "+String.valueOf(total))
+                        .setNegativeButton("Cancel", executor, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
 
+                            }
+                        }).build();
+                
 
-                Map<String,Double> map = new HashMap();
-
-                for(Data dat:list)
-                {
-                    map.put(dat.name+"$"+dat.price, (double) dat.items);
-                }
-
-
-
-
-
-
-
-
-                String uid =  user.getUid();
-                String uname = user.getDisplayName();
-                String uemail = user.getEmail();
-
-
-
-
-                CurrentOrder currentOrder = new CurrentOrder( map , uid, total, eatery_id, eatery_name, gp, uname, uemail, mPhoneNumber);
-
-                Map<String, String> user_info = new HashMap<>();
-                user_info.put("user_name",FirebaseAuth.getInstance().getCurrentUser().getDisplayName());
-                user_info.put("user_email", FirebaseAuth.getInstance().getCurrentUser().getEmail());
-                FirebaseFirestore.getInstance().collection("Users").document(FirebaseAuth.getInstance().getCurrentUser().getUid()).set(user_info, SetOptions.merge());
-
-                Toast.makeText(order_details.this, String.valueOf(i++), Toast.LENGTH_SHORT).show();
-                collectionReference.add(currentOrder).addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
+                biometricPrompt.authenticate(new CancellationSignal(), executor, new BiometricPrompt.AuthenticationCallback() {
                     @Override
-                    public void onSuccess(DocumentReference documentReference) {
-                        Toast.makeText(order_details.this, "Success", Toast.LENGTH_SHORT).show();
-                        progressDialog.dismiss();
-                        Intent intent = new Intent(order_details.this, OrderConfirm.class);
-                        intent.putExtra("order_id", documentReference.getId());
-                        intent.putExtra("user", user);
-                        startActivity(intent);
-                        finish();
+                    public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result) {
+
+
+
+                        order_details.this.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+
+                                progressDialog = new ProgressDialog(order_details.this);
+                                progressDialog.show();
+                                progressDialog.setContentView(R.layout.progress_dialog);
+                                progressDialog.getWindow().setBackgroundDrawableResource(
+                                        android.R.color.transparent
+                                );
+
+
+
+
+
+                                Map<String,Double> map = new HashMap();
+
+                                for(Data dat:list)
+                                {
+                                    map.put(dat.name+"$"+dat.price, (double) dat.items);
+                                }
+
+
+
+
+
+
+
+
+                                String uid =  user.getUid();
+                                String uname = user.getDisplayName();
+                                String uemail = user.getEmail();
+
+
+
+
+                                CurrentOrder currentOrder = new CurrentOrder( map , uid, total, eatery_id, eatery_name, gp, uname, uemail, mPhoneNumber);
+
+                                Map<String, String> user_info = new HashMap<>();
+                                user_info.put("user_name",FirebaseAuth.getInstance().getCurrentUser().getDisplayName());
+                                user_info.put("user_email", FirebaseAuth.getInstance().getCurrentUser().getEmail());
+                                FirebaseFirestore.getInstance().collection("Users").document(FirebaseAuth.getInstance().getCurrentUser().getUid()).set(user_info, SetOptions.merge());
+
+                                 collectionReference.add(currentOrder).addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
+                                    @Override
+                                    public void onSuccess(DocumentReference documentReference) {
+                                        Toast.makeText(order_details.this, "Success", Toast.LENGTH_SHORT).show();
+                                        progressDialog.dismiss();
+                                        Intent intent = new Intent(order_details.this, OrderConfirm.class);
+                                        intent.putExtra("order_id", documentReference.getId());
+                                        intent.putExtra("user", user);
+                                        startActivity(intent);
+                                        finish();
+                                    }
+                                });
+                            }
+                        });
+
+
                     }
                 });
 
 
-
-
             }
         });
-
-
-
-
-
         }
 
 
@@ -300,11 +323,6 @@ public class order_details extends AppCompatActivity implements Serializable {
 
                     adapter = new OrderAdapter(order_details.this, R.layout.list_order_items, itemlist);
                     ls.setAdapter(adapter);
-
-
-
-
-
                 }
             });
         }
@@ -312,6 +330,12 @@ public class order_details extends AppCompatActivity implements Serializable {
             e.printStackTrace();
 
         }
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        order_details.this.finish();
     }
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

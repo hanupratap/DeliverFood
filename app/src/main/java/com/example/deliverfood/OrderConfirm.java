@@ -124,7 +124,7 @@ public class OrderConfirm extends AppCompatActivity {
             @Override
             public void onSuccess(DocumentSnapshot documentSnapshot) {
                 tv1.setText(documentSnapshot.get(EATERY_NAME).toString());
-                tv2.append(documentSnapshot.get(TOTAL).toString());
+                tv2.append(String.format("%.3f",documentSnapshot.getDouble(TOTAL)));
 
                 Timestamp timestamp = (Timestamp) documentSnapshot.get(ORDER_TIME);
                 tv3.append(timestamp.toDate().toString());
@@ -226,10 +226,9 @@ public class OrderConfirm extends AppCompatActivity {
 
                     if(documentSnapshot.get("confirm").toString()=="true")
                     {
-
                         tv4.setText("Order Confirmed!");
+                        Toast.makeText(OrderConfirm.this, documentSnapshot.getString("user_name"), Toast.LENGTH_SHORT).show();
                         funcAct();
-
                     }
 
 
@@ -258,7 +257,12 @@ public class OrderConfirm extends AppCompatActivity {
 
     }
 
-
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        finish();
+        return;
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

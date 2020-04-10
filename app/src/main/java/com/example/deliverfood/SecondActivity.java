@@ -149,6 +149,8 @@ public class SecondActivity extends AppCompatActivity {
             public void onClick(View v) {
                 Intent intent = new Intent(SecondActivity.this, OrderHistory.class);
                 intent.putExtra("user", user);
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
                 startActivity(intent);
             }
         });
@@ -158,9 +160,11 @@ public class SecondActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
 
-                        Intent a = new Intent(SecondActivity.this, MapsActivity.class);
-                        a.putExtra("user", user);
-                    SecondActivity.this.startActivity(a);
+                Intent a = new Intent(SecondActivity.this, MapsActivity.class);
+                a.putExtra("user", user);
+                a.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                a.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                SecondActivity.this.startActivity(a);
 
             }
         });

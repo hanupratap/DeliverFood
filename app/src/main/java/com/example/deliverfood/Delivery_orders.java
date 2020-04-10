@@ -295,7 +295,7 @@ void func()
          if (prices.size() == 0)
              Toast.makeText(Delivery_orders.this, "No orders to show, (Swipe Down to refresh!)", Toast.LENGTH_SHORT).show();
 
-         user = getIntent().getParcelableExtra("user");
+         user = FirebaseAuth.getInstance().getCurrentUser();
 
 
          progressDialog.dismiss();
