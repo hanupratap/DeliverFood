@@ -87,11 +87,11 @@ public class UserOderConfirmMap extends FragmentActivity implements OnMapReadyCa
         mapFragment.getMapAsync(this);
 
 
-        uid = getIntent().getStringExtra("uid");
+
 
         user = getIntent().getParcelableExtra("user");
         order_id = getIntent().getStringExtra("order_id");
-
+        uid = user.getUid();
 
 
 

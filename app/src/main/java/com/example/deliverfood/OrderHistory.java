@@ -5,15 +5,24 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.app.ProgressDialog;
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
+import android.text.SpannableString;
 import android.text.format.DateFormat;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import com.facebook.login.LoginManager;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
@@ -38,21 +47,10 @@ public class OrderHistory extends AppCompatActivity {
     FirebaseUser user;
     ProgressDialog progressDialog;
     private List<String> order_ids = new ArrayList<>();
+    private List<String> order_ids1 = new ArrayList<>();
+
     ListView ls;
-    boolean confirm = false;
-    public  String getDateCurrentTimeZone(long timestamp) {
-        try{
-            Calendar calendar = Calendar.getInstance();
-            TimeZone tz = TimeZone.getDefault();
-            calendar.setTimeInMillis(timestamp * 1000);
-            calendar.add(Calendar.MILLISECOND, tz.getOffset(calendar.getTimeInMillis()));
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            Date currenTimeZone = (Date) calendar.getTime();
-            return sdf.format(currenTimeZone);
-        }catch (Exception e) {
-        }
-        return "";
-    }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
@@ -73,6 +71,8 @@ public class OrderHistory extends AppCompatActivity {
     }
 
 
+    private GoogleSignInClient mGoogleSignInClient;
+    private GoogleSignInOptions gso;
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
 
@@ -80,14 +80,32 @@ public class OrderHistory extends AppCompatActivity {
         {
             case R.id.logout:
             {
+                LoginManager.getInstance().logOut();
+                gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                        .requestIdToken(getString(R.string.default_web_client_id))
+                        .requestEmail()
+                        .build();
+                mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
                 FirebaseAuth.getInstance().signOut();
-                Intent intent = new Intent(this, MainActivity.class);
-                startActivity(intent);
+
+                // Google sign out
+                mGoogleSignInClient.signOut().addOnCompleteListener(this,
+                        new OnCompleteListener<Void>() {
+                            @Override
+                            public void onComplete(@NonNull Task<Void> task) {
+                                Intent intent = new Intent(OrderHistory.this, MainActivity.class);
+                                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+
+                                startActivity(intent);
+                            }
+                        });
+
                 finish();
             }
             case R.id.Home:
             {
                 Intent intent = new Intent(this, MainActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 startActivity(intent);
                 finish();
             }
@@ -97,45 +115,61 @@ public class OrderHistory extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    List<OrderHistoryTemplate> list = new ArrayList<>();
+    OrderHistoryAdapter adapter;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_order_history);
-
+        SpannableString sp = new SpannableString("Order history");
+//        sp.setSpan(new ForegroundColorSpan(Color.rgb(15,157,88)), 0, "Current Orders".length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        getSupportActionBar().setTitle(sp);
+        getSupportActionBar().setBackgroundDrawable(new ColorDrawable(Color.argb(0,0,0,0)));
         progressDialog = new ProgressDialog(OrderHistory.this);
         progressDialog.show();
         progressDialog.setContentView(R.layout.progress_dialog);
         progressDialog.getWindow().setBackgroundDrawableResource(
                 android.R.color.transparent
         );
+        progressDialog.setCancelable(false);
+
         ls = findViewById(R.id.listV);
         user = getIntent().getParcelableExtra("user");
 
 
 
-        FirebaseFirestore.getInstance().collection("Current_Orders").whereEqualTo("user_id", user.getUid()).get().addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
+
+        FirebaseFirestore.getInstance().collection("Current_Orders").whereEqualTo("user_email", user.getEmail()).whereEqualTo("order_delivered", true).get().addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
             @Override
             public void onSuccess(QuerySnapshot queryDocumentSnapshots) {
                 if(queryDocumentSnapshots!=null)
                 {
                     for(QueryDocumentSnapshot documentSnapshot: queryDocumentSnapshots)
                     {
-
-                        confirm = (boolean) documentSnapshot.get("confirm");
-                        if(confirm)
-                        {
-//                            Toast.makeText(OrderHistory.this, documentSnapshot.getId(), Toast.LENGTH_SHORT).show();
-
                             Timestamp tp = (com.google.firebase.Timestamp)documentSnapshot.get("order_time");
 
-                            order_ids.add("Total : " + documentSnapshot.get("total") + "\n \n" + "Time : " + tp.toDate().toString() + "\n" + "Order ID : "+documentSnapshot.getId() + "\n");
+                            order_ids1.add(documentSnapshot.getId());
+//                            order_ids.add("Total : " + documentSnapshot.get("total") + "\n \n" + "Time : " + tp.toDate().toString() + "\n" + "Order ID : "+documentSnapshot.getId() + "\n");
+                            list.add(new OrderHistoryTemplate(documentSnapshot.getString("delivery_person_id"), documentSnapshot.getString("eatery_name"), documentSnapshot.getDouble("total"), documentSnapshot.getBoolean("confirm")));
 
-                        }
 
                     }
                     progressDialog.dismiss();
-                    ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(OrderHistory.this, android.R.layout.simple_list_item_1, order_ids);
-                    ls.setAdapter(arrayAdapter);
+                    adapter = new OrderHistoryAdapter(OrderHistory.this, R.layout.order_history_list_item, list);
+
+//                    ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(OrderHistory.this, android.R.layout.simple_list_item_1, order_ids);
+                    ls.setAdapter(adapter);
+
+                    ls.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                        @Override
+                        public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                            Intent intent = new Intent(OrderHistory.this, OrderDeliverFinished.class);
+                            intent.putExtra("send_email", true);
+                            intent.putExtra("order_id", order_ids1.get(i));
+                            startActivity(intent);
+                        }
+                    });
                 }
 
             }

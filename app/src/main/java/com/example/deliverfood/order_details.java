@@ -15,6 +15,8 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.hardware.biometrics.BiometricPrompt;
 import android.location.Location;
 import android.os.Build;
@@ -22,7 +24,11 @@ import android.os.Bundle;
 
 
 import android.os.CancellationSignal;
+import android.os.Handler;
 import android.telephony.TelephonyManager;
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.style.ForegroundColorSpan;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -35,6 +41,10 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.facebook.login.LoginManager;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -112,6 +122,10 @@ public class order_details extends AppCompatActivity implements Serializable {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_order_details);
+        SpannableString sp = new SpannableString("Billing Information");
+        sp.setSpan(new ForegroundColorSpan(Color.GRAY), 0, "Billing Information".length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        getSupportActionBar().setTitle(sp);
+        getSupportActionBar().setBackgroundDrawable(new ColorDrawable(Color.argb(0,0,0,0)));
 
         tv9 = findViewById(R.id.textView44);
 
@@ -185,9 +199,7 @@ public class order_details extends AppCompatActivity implements Serializable {
                         .setDescription("Your order Total : "+String.valueOf(total))
                         .setNegativeButton("Cancel", executor, new DialogInterface.OnClickListener() {
                             @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-
-                            }
+                            public void onClick(DialogInterface dialogInterface, int i) {}
                         }).build();
                 
 
@@ -207,6 +219,7 @@ public class order_details extends AppCompatActivity implements Serializable {
                                 progressDialog.getWindow().setBackgroundDrawableResource(
                                         android.R.color.transparent
                                 );
+                                progressDialog.setCancelable(false);
 
 
 
@@ -238,18 +251,26 @@ public class order_details extends AppCompatActivity implements Serializable {
                                 Map<String, String> user_info = new HashMap<>();
                                 user_info.put("user_name",FirebaseAuth.getInstance().getCurrentUser().getDisplayName());
                                 user_info.put("user_email", FirebaseAuth.getInstance().getCurrentUser().getEmail());
-                                FirebaseFirestore.getInstance().collection("Users").document(FirebaseAuth.getInstance().getCurrentUser().getUid()).set(user_info, SetOptions.merge());
+                                FirebaseFirestore.getInstance().collection("Users").document(FirebaseAuth.getInstance().getCurrentUser().getUid())
+                                        .set(user_info, SetOptions.merge());
 
                                  collectionReference.add(currentOrder).addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
                                     @Override
-                                    public void onSuccess(DocumentReference documentReference) {
-                                        Toast.makeText(order_details.this, "Success", Toast.LENGTH_SHORT).show();
-                                        progressDialog.dismiss();
-                                        Intent intent = new Intent(order_details.this, OrderConfirm.class);
-                                        intent.putExtra("order_id", documentReference.getId());
-                                        intent.putExtra("user", user);
-                                        startActivity(intent);
-                                        finish();
+                                    public void onSuccess(final DocumentReference documentReference) {
+//                                        Toast.makeText(order_details.this, "Success", Toast.LENGTH_SHORT).show();
+                                        new Handler().postDelayed(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                progressDialog.dismiss();
+                                                Intent intent = new Intent(order_details.this, OrderConfirm.class);
+                                                intent.putExtra("order_id", documentReference.getId());
+                                                intent.putExtra("user", user);
+                                                startActivity(intent);
+                                                order_details.this.finish();
+                                            }
+                                        }, 1500);
+
+
                                     }
                                 });
                             }
@@ -292,37 +313,38 @@ public class order_details extends AppCompatActivity implements Serializable {
                         Location.distanceBetween(gp.getLatitude(), gp.getLongitude(), currentLocation.getLatitude(), currentLocation.getLongitude(), dist);
                         if(dist[0]<20.0*1000 && dist[0]>10.0*1000)
                         {
-                            total = total*1.05;
-
+                            total = total*(1.05);
                             tv9.setText("\nNOTE: \n5% added due to large distance between you and the eatery!\n");
 
                         }
                         else if(dist[0]<20.0*1000)
                         {
-                            total = total*1.1;
+                            total = total*(1.1);
 
                             tv9.setText("\nNOTE: \n10% added due to large distance between you and the eatery!\n");
                         }
                         else if(dist[0]<40.0*1000)
                         {
-                            total = total*1.15;
+                            total = total*(1.15);
 
                             tv9.setText("\nNOTE: \n15% added due to large distance between you and the eatery!\n");
                         }
                         else
                         {
-                            total = total*1.2;
+                            total = total*(1.2);
 
                             tv9.setText("\nNOTE: \n20% added due to large distance between you and the eatery!\n");
                         }
 
-
                     }
+
+                    total = Double.parseDouble(String.format("%.3f",total));
                     tv1.append(String.valueOf(total));
 
 
                     adapter = new OrderAdapter(order_details.this, R.layout.list_order_items, itemlist);
                     ls.setAdapter(adapter);
+
                 }
             });
         }
@@ -335,7 +357,7 @@ public class order_details extends AppCompatActivity implements Serializable {
     @Override
     public void onBackPressed() {
         super.onBackPressed();
-        order_details.this.finish();
+        this.finish();
     }
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -357,6 +379,8 @@ public class order_details extends AppCompatActivity implements Serializable {
     }
 
 
+    private GoogleSignInClient mGoogleSignInClient;
+    private GoogleSignInOptions gso;
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
 
@@ -364,10 +388,26 @@ public class order_details extends AppCompatActivity implements Serializable {
         {
             case R.id.logout:
             {
+                LoginManager.getInstance().logOut();
+                gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                        .requestIdToken(getString(R.string.default_web_client_id))
+                        .requestEmail()
+                        .build();
+                mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
                 FirebaseAuth.getInstance().signOut();
-                Intent intent = new Intent(this, MainActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                startActivity(intent);
+
+                // Google sign out
+                mGoogleSignInClient.signOut().addOnCompleteListener(this,
+                        new OnCompleteListener<Void>() {
+                            @Override
+                            public void onComplete(@NonNull Task<Void> task) {
+                                Intent intent = new Intent(order_details.this, MainActivity.class);
+                                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+
+                                startActivity(intent);
+                            }
+                        });
+
                 finish();
             }
             case R.id.Home:

@@ -4,8 +4,12 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.Typeface;
+import android.graphics.drawable.ColorDrawable;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
@@ -13,6 +17,15 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.media.TimedMetaData;
 import android.os.Bundle;
+import android.os.Handler;
+import android.text.Layout;
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.style.AlignmentSpan;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.StyleSpan;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -24,6 +37,10 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.facebook.login.LoginManager;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -91,21 +108,31 @@ public class Deliver_Ordered extends AppCompatActivity{
 
 
     double total;
-    String message1;
 
     FirebaseUser user;
+    private ProgressDialog progressDialog;
 
+    public static double round(double value, int places) {
+        if (places < 0) throw new IllegalArgumentException();
+
+        long factor = (long) Math.pow(10, places);
+        value = value * factor;
+        long tmp = Math.round(value);
+        return (double) tmp / factor;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_deliver__ordered);
-        uid = getIntent().getStringExtra("uid");
         order_id = getIntent().getStringExtra("order_id");
 
-        user = getIntent().getParcelableExtra("user");
+        user = FirebaseAuth.getInstance().getCurrentUser();
 
-
+        SpannableString sp = new SpannableString("Order Confirmed");
+        sp.setSpan(new ForegroundColorSpan(Color.rgb(15,157,88)), 0, "Order Confirmed".length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        getSupportActionBar().setTitle(sp);
+        getSupportActionBar().setBackgroundDrawable(new ColorDrawable(Color.argb(0,0,0,0)));
 
         tv = findViewById(R.id.textView22);
         tv1 = findViewById(R.id.textView25);
@@ -117,50 +144,66 @@ public class Deliver_Ordered extends AppCompatActivity{
         tv5 = findViewById(R.id.textView36);
         tv6 = findViewById(R.id.textView40);
         tv7 = findViewById(R.id.textView47);
+        progressDialog = new ProgressDialog(Deliver_Ordered.this);
+        progressDialog.show();
+        progressDialog.setContentView(R.layout.progress_dialog);
+        progressDialog.getWindow().setBackgroundDrawableResource(
+                android.R.color.transparent
+        );
+        progressDialog.setCancelable(false);
 
-
-
-
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                progressDialog.dismiss();
+            }
+        }, 1000);
 
 
         FirebaseFirestore.getInstance().collection(COLLECTION).document(order_id).get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
             @Override
             public void onSuccess(DocumentSnapshot documentSnapshot) {
-                if( documentSnapshot.get("delivery_person_name")!=null)
-                {
-                    tv.setText("Name :" + documentSnapshot.get("delivery_person_name").toString());
-                }
-                if(documentSnapshot.get("delivery_person_phone")!=null)
-                {
-
-                    tv1.setText("Phone :" + documentSnapshot.get("delivery_person_phone").toString());
-                }
-                if(documentSnapshot.get("eatery_name")!=null)
-                {
-
-                    tv2.setText("Email: "+documentSnapshot.get("eatery_name").toString());
-                }
-                if(documentSnapshot.get("delivery_person_email")!=null)
-                {
-
-                    tv3.setText("Eatery :" + documentSnapshot.get("delivery_person_email").toString());
-                }
-                if(documentSnapshot.getString("order_code")!=null)
-                {
-                    tv6.append(documentSnapshot.getString("order_code"));
-                }
 
 
+                FirebaseFirestore.getInstance().collection(COLLECTION).document(order_id).addSnapshotListener(new EventListener<DocumentSnapshot>() {
+                    @Override
+                    public void onEvent(@Nullable DocumentSnapshot documentSnapshot, @Nullable FirebaseFirestoreException e) {
+                        if( documentSnapshot.get("delivery_person_name")!=null)
+                        {
+                            tv.setText("Name :" + documentSnapshot.get("delivery_person_name").toString());
+                        }
+                        if(documentSnapshot.get("delivery_person_phone")!=null)
+                        {
+
+                            tv1.setText("Phone :" + documentSnapshot.get("delivery_person_phone").toString());
+                        }
+                        if(documentSnapshot.get("delivery_person_email")!=null)
+                        {
+
+                            tv2.setText("Email: "+documentSnapshot.get("delivery_person_email").toString());
+                        }
+                        if(documentSnapshot.get("eatery_name")!=null)
+                        {
+
+                            tv3.setText("Eatery : " + documentSnapshot.get("eatery_name").toString());
+                        }
+                        if(documentSnapshot.getString("order_code")!=null)
+                        {
+                            tv6.setText("Code - "+documentSnapshot.getString("order_code"));
+                        }
+                    }
+                });
 
 
-                uid = documentSnapshot.get("user_id").toString();
+
+
 
                 order = (Map<String, Double>) documentSnapshot.get("order");
 
                total = Float.parseFloat(String.format("%.3f",documentSnapshot.getDouble("total")));
 
 
-                FirebaseFirestore.getInstance().collection("Users").document(uid).get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
+                FirebaseFirestore.getInstance().collection("Users").document(user.getUid()).get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
                     @Override
                     public void onSuccess(DocumentSnapshot documentSnapshot) {
                         Geocoder geocoder;
@@ -203,7 +246,7 @@ public class Deliver_Ordered extends AppCompatActivity{
                         int total_count = 0;
                         String fin;
 
-                        tv5.setText("Order ID - " + order_id);
+                        tv5.setText("" + order_id);
 
                         if(documentSnapshot.getBoolean("discount")!=null)
                             discount = documentSnapshot.getBoolean("discount");
@@ -215,15 +258,8 @@ public class Deliver_Ordered extends AppCompatActivity{
                             name = s.substring(0,iend);
                             price = Double.parseDouble(s.substring(iend+1));
                             count = (int)Double.parseDouble(order.get(s).toString());
-                            fin =  name+"\n" +  getString(R.string.tab) +"Price : "+price+"\n"+  getString(R.string.tab) +"Count : " + count;
-
-
-
-                            total1 = (float)(price*count);
-
-                            message1 = message1 + "\n " + fin;
+                            total1 = total1 + (float)(price*count);
                             total_count=total_count+count;
-
                             item_listt.add(new Order_item_template(name, price, count, price*count));
                         }
 
@@ -233,8 +269,25 @@ public class Deliver_Ordered extends AppCompatActivity{
 
                         if(discount)
                         {
+
+
                             total = total*0.8;
-                            tv7.append("\nDiscount Applied = 20% " + "\nFINAL TOTAL = " + total);
+                            total = round(total,3);
+                            String s0 = "\nDiscount Applied = 20% ";
+                            String s1 =  "\nFINAL TOTAL = " + total; ;
+
+                            tv7.append(s0);
+
+
+                            final SpannableStringBuilder sb = new SpannableStringBuilder(s1);
+
+                            final StyleSpan bss = new StyleSpan(android.graphics.Typeface.BOLD); // Span to make text bold
+                            sb.setSpan(bss, 0, s1.length(), Spannable.SPAN_INCLUSIVE_INCLUSIVE); // make first 4 characters Bold
+                            sb.setSpan(new AlignmentSpan.Standard(Layout.Alignment.ALIGN_OPPOSITE)
+                                    ,   0
+                                    ,  s1.length()
+                                    , Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            tv7.append(sb);
                         }
                         else
                         {
@@ -242,14 +295,15 @@ public class Deliver_Ordered extends AppCompatActivity{
                         }
 
 
+                        total = round(total, 3);
 
-                        item_listt.add(new Order_item_template("Final Total",total, total_count, total ));
+                        item_listt.add(new Order_item_template("Total",total, total_count, total ));
 
 
                         ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(Deliver_Ordered.this, android.R.layout.simple_list_item_1, list );
                         adapter = new OrderAdapter(Deliver_Ordered.this, R.layout.list_order_items, item_listt);
                         ls.setAdapter(adapter);
-
+                        progressDialog.dismiss();
                     }
 
 
@@ -283,28 +337,18 @@ public class Deliver_Ordered extends AppCompatActivity{
 
                             if(documentSnapshot.getBoolean("order_delivered")==true)
                             {
-                                String message;
-                                String delivery_name = documentSnapshot.getString("delivery_person_name");
-                                String delivery_email = documentSnapshot.getString("delivery_person_email");
-                                message = "Dear "+user.getDisplayName() + ","+"\nYour order has been delivered by " + delivery_name
-                                        + " ( " + delivery_email + " )"+ "\nOrderID: " +   order_id + "\n Order Detail-";
+                                if(temp==false)
+                                {
+                                    Toast.makeText(Deliver_Ordered.this, "Order Delivered", Toast.LENGTH_SHORT).show();
 
-                                message = message + message1;
-                                message = message + "\n Final Total(After adjustments) :" + String.valueOf(total);
+                                    Intent intent = new Intent(Deliver_Ordered.this, SplashComplete.class);
+                                    intent.putExtra("order_id", order_id);
+                                    intent.putExtra("send_email", temp);
+                                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                    startActivity(intent);
+                                    finish();
+                                }
 
-                                message = message + "\nRegards, \nFoodDeliver";
-                                Toast.makeText(Deliver_Ordered.this, String.valueOf(temp), Toast.LENGTH_SHORT).show();
-
-
-
-                                Toast.makeText(Deliver_Ordered.this, "Order Delivered", Toast.LENGTH_SHORT).show();
-                                Intent intent = new Intent(Deliver_Ordered.this, OrderDeliverFinished.class);
-                                intent.putExtra("order_id", order_id);
-                                intent.putExtra("message", message);
-                                intent.putExtra("send_email", !temp);
-                                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                                startActivity(intent);
-                                finish();
                             }
 
                         }
@@ -322,7 +366,7 @@ public class Deliver_Ordered extends AppCompatActivity{
                 Intent intent = new Intent(Deliver_Ordered.this, UserOderConfirmMap.class);
                 intent.putExtra("order_id", order_id);
                 intent.putExtra("user", user);
-                intent.putExtra("uid", uid);
+
                 startActivity(intent);
             }
         });
@@ -351,6 +395,8 @@ public class Deliver_Ordered extends AppCompatActivity{
         }
         return super.onPrepareOptionsMenu(menu);
     }
+    private GoogleSignInClient mGoogleSignInClient;
+    private GoogleSignInOptions gso;
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
 
@@ -358,14 +404,32 @@ public class Deliver_Ordered extends AppCompatActivity{
         {
             case R.id.logout:
             {
+                LoginManager.getInstance().logOut();
+                gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                        .requestIdToken(getString(R.string.default_web_client_id))
+                        .requestEmail()
+                        .build();
+                mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
                 FirebaseAuth.getInstance().signOut();
-                Intent intent = new Intent(this, MainActivity.class);
-                startActivity(intent);
+
+                // Google sign out
+                mGoogleSignInClient.signOut().addOnCompleteListener(this,
+                        new OnCompleteListener<Void>() {
+                            @Override
+                            public void onComplete(@NonNull Task<Void> task) {
+                                Intent intent = new Intent(Deliver_Ordered.this, MainActivity.class);
+                                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+
+                                startActivity(intent);
+                            }
+                        });
+
                 finish();
             }
             case R.id.Home:
             {
                 Intent intent = new Intent(this, MainActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 startActivity(intent);
                 finish();
             }
@@ -374,7 +438,6 @@ public class Deliver_Ordered extends AppCompatActivity{
         }
         return super.onOptionsItemSelected(item);
     }
-
     void getLocation() {
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
         try {

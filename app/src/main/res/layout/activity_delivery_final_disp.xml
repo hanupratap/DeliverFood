@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".Deliver_Ordered"
+
+    android:id="@+id/constraint1"
+
+    android:padding="5dp"
+
+    >
+
+
+    <TextView
+        android:id="@+id/textView255"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:padding="5dp"
+        android:text="\t Note : "
+        android:textAlignment="textStart"
+        android:textSize="15dp"
+        android:textColor="@color/design_default_color_error"
+        android:layout_marginHorizontal="10dp"
+
+        app:layout_constraintBottom_toTopOf="@+id/textView253"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+
+
+    <TextView
+        android:id="@+id/textView253"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:padding="5dp"
+        android:text="\t Eatery : "
+        android:textAlignment="textStart"
+        android:textSize="15dp"
+        android:layout_marginHorizontal="10dp"
+
+        android:textStyle="bold"
+        android:textColor="@color/com_facebook_blue"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <TextView
+        android:id="@+id/textView252"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:padding="5dp"
+        android:text=""
+        android:textAlignment="center"
+        android:textSize="12dp"
+        android:textColor="@color/quantum_amber700"
+
+        app:layout_constraintBottom_toTopOf="@+id/listView10"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/textView251" />
+
+    <TextView
+        android:id="@+id/textView250"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+
+        android:padding="5dp"
+        android:text="\tPhone : "
+        android:textAlignment="textStart"
+        android:textSize="15dp"
+        android:textStyle="bold"
+        android:layout_marginHorizontal="10dp"
+
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView249" />
+
+    <TextView
+        android:id="@+id/textView249"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:padding="5dp"
+        android:text="\tEmail : "
+        android:textAlignment="textStart"
+        android:textSize="15dp"
+        android:textStyle="bold"
+        android:layout_marginHorizontal="10dp"
+
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView248" />
+
+    <TextView
+        android:id="@+id/textView248"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:padding="5dp"
+        android:text="\tName : "
+        android:textAlignment="textStart"
+        android:textSize="15dp"
+        android:textStyle="bold"
+        android:layout_marginHorizontal="10dp"
+
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView246" />
+
+    <TextView
+        android:id="@+id/textView246"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:padding="5dp"
+        android:text="User's Details"
+        android:textAlignment="textStart"
+        android:textColor="@color/quantum_googblue"
+        android:textSize="15dp"
+        android:textStyle="bold"
+
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/lottieAnimationView3" />
+
+    <TextView
+        android:id="@+id/textView251"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:padding="5dp"
+        android:text="Order Details"
+        android:textAlignment="textStart"
+        android:textColor="@color/quantum_googblue"
+        android:textSize="15dp"
+        android:textStyle="bold"
+
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView250" />
+
+    <com.airbnb.lottie.LottieAnimationView
+        android:id="@+id/lottieAnimationView3"
+        android:layout_width="0dp"
+        android:layout_height="50dp"
+        android:foregroundGravity="fill_vertical"
+        android:padding="0dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:lottie_autoPlay="true"
+        app:lottie_fileName="completed.json"
+        app:lottie_loop="true" />
+
+    <ListView
+        android:id="@+id/listView10"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_margin="0dp"
+        android:divider="@null"
+        android:dividerHeight="0dp"
+        android:padding="10dp"
+        app:layout_constraintBottom_toTopOf="@+id/textView255"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView251" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -12,6 +12,8 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -26,10 +28,16 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
+import com.facebook.login.LoginManager;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -51,6 +59,14 @@ public class DeliverOrOrder extends AppCompatActivity {
     boolean doubleBackToExitPressedOnce = false;
 
 
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        Intent intent = new Intent(this, MainActivity.class);
+        startActivity(intent);
+        finish();
+        return;
+    }
 
     private void checkPermissionLocation()
     {
@@ -99,6 +115,8 @@ public class DeliverOrOrder extends AppCompatActivity {
     }
 
 
+    private GoogleSignInClient mGoogleSignInClient;
+    private GoogleSignInOptions gso;
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
 
@@ -106,15 +124,34 @@ public class DeliverOrOrder extends AppCompatActivity {
         {
             case R.id.logout:
             {
+                LoginManager.getInstance().logOut();
+                gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                        .requestIdToken(getString(R.string.default_web_client_id))
+                        .requestEmail()
+                        .build();
+                mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
                 FirebaseAuth.getInstance().signOut();
-                Intent intent = new Intent(this, MainActivity.class);
-                startActivity(intent);
 
+                // Google sign out
+                mGoogleSignInClient.signOut().addOnCompleteListener(this,
+                        new OnCompleteListener<Void>() {
+                            @Override
+                            public void onComplete(@NonNull Task<Void> task) {
+                                Intent intent = new Intent(DeliverOrOrder.this, MainActivity.class);
+                                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+
+                                startActivity(intent);
+                            }
+                        });
+
+                finish();
             }
             case R.id.Home:
             {
                 Intent intent = new Intent(this, MainActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 startActivity(intent);
+                finish();
 
             }
 
@@ -129,53 +166,46 @@ public class DeliverOrOrder extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_deliver_or_order);
         checkPermissionLocation();
-
         btn = findViewById(R.id.button6);
         btn2 = findViewById(R.id.button7);
-
+        getSupportActionBar().setTitle("Deliver | Order");
         user = FirebaseAuth.getInstance().getCurrentUser();
 
+        getSupportActionBar().setBackgroundDrawable(new ColorDrawable(Color.argb(0,0,0,0)));
 
         btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
                 FirebaseFirestore.getInstance().collection("Current_Orders").whereEqualTo("order_delivered", false).whereEqualTo("delivery_person_id", user.getUid()).get()
-                        .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
-                    @Override
-                    public void onSuccess(QuerySnapshot queryDocumentSnapshots) {
-                        for(QueryDocumentSnapshot documentSnapshot:queryDocumentSnapshots)
-                        {
-                            boolean temp = false;
-
-                                if(documentSnapshot!=null)
+                        .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                            @Override
+                            public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                                if(task.isSuccessful())
                                 {
-                                    Intent intent = new Intent(DeliverOrOrder.this, Deliver_Confirmed.class);
-                                    intent.putExtra("user", user);
-                                    intent.putExtra("order_id", documentSnapshot.getId());
-                                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                                    intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-                                    Toast.makeText(DeliverOrOrder.this, "Complete your previous order!", Toast.LENGTH_SHORT).show();
-                                    startActivity(intent);
-                                    finish();
-                                    return;
+                                    if(task.getResult().size()==0)
+                                    {
+                                        Intent intent = new Intent(DeliverOrOrder.this, Delivery_orders.class);
+                                        startActivity(intent);
+
+
+                                    }
+
+                                    for(QueryDocumentSnapshot documentSnapshot:task.getResult())
+                                    {
+
+                                            Intent intent = new Intent(DeliverOrOrder.this, Deliver_Confirmed.class);
+                                            intent.putExtra("user", user);
+                                            intent.putExtra("order_id", documentSnapshot.getId());
+                                            startActivity(intent);
+                                            Toast.makeText(DeliverOrOrder.this, "Complete your previous order!", Toast.LENGTH_SHORT).show();
+                                            break;
+
+                                    }
                                 }
 
-                        }
-
-                    }
-                }).addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        Toast.makeText(DeliverOrOrder.this, "Error!", Toast.LENGTH_SHORT).show();
-                    }
-                });
-
-                Intent intent = new Intent(DeliverOrOrder.this, Delivery_orders.class);
-                startActivity(intent);
-                finish();
-                return;
-
+                            }
+                        });
 
 
 

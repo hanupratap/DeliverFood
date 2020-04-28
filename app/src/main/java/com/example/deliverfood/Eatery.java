@@ -1,5 +1,6 @@
 package com.example.deliverfood;
 
+import androidx.annotation.ColorRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
@@ -10,11 +11,20 @@ import android.app.ProgressDialog;
 import android.content.Intent;
 
 import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.graphics.Typeface;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
 import android.os.Bundle;
 
+import android.os.Handler;
 import android.os.Parcelable;
 import android.preference.PreferenceManager;
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.StyleSpan;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -27,6 +37,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 
+import com.facebook.login.LoginManager;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -55,7 +69,7 @@ import io.paperdb.Paper;
 
 
 public class Eatery extends AppCompatActivity implements Serializable {
-    private TextView tv;
+
     private Button btn;
     private CollectionReference collectionReference;
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
@@ -71,6 +85,8 @@ public class Eatery extends AppCompatActivity implements Serializable {
 
     private List dishes = new ArrayList();
     private List prices = new ArrayList();
+    private List image_urls = new ArrayList();
+
     private RecyclerView recyclerView;
 
 
@@ -79,7 +95,7 @@ public class Eatery extends AppCompatActivity implements Serializable {
     private double EATERY_LOCATION_LATITIUDE=0;
     private double EATERY_LOCATION_LONGITUDE=0;
 
-    private HashMap<String, Data> order = new HashMap<String, Data>();
+    private HashMap<String, Data> order = new HashMap<>();
 
 
 
@@ -89,35 +105,37 @@ public class Eatery extends AppCompatActivity implements Serializable {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        progressDialog = new ProgressDialog(Eatery.this);
+        progressDialog.show();
+        progressDialog.setContentView(R.layout.progress_dialog);
+        progressDialog.getWindow().setBackgroundDrawableResource(
+                android.R.color.transparent
+        );
+        progressDialog.setCancelable(false);
+
         setContentView(R.layout.activity_eatery);
-        tv = findViewById(R.id.textView3);
         btn = findViewById(R.id.button4);
         recyclerView = findViewById(R.id.recyclerView);
-
-
-
-        progressDialog = ProgressDialog.show(Eatery.this, "",
-                "Loading. Please wait...", true);
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                progressDialog.dismiss();
+            }
+        }, 2000);
 
         Paper.init(Eatery.this);
 
-
         if(order.size()==0)
         btn.setEnabled(false);
-
-
 
         btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
-
                 for(String dat: order.keySet())
                 {
                     Paper.book().write(dat, order.get(dat));
                 }
-
-
 
                 Intent intent = new Intent(Eatery.this, order_details.class);
                 intent.putExtra("eatery_location_latitude",  EATERY_LOCATION_LATITIUDE);
@@ -127,7 +145,6 @@ public class Eatery extends AppCompatActivity implements Serializable {
                 intent.putExtra("user",getIntent().getParcelableExtra("user"));
 
                 startActivity(intent) ;
-                finish();
             }
         });
 
@@ -143,12 +160,14 @@ public class Eatery extends AppCompatActivity implements Serializable {
                     if (document != null) {
 
                         EATERY_NAME = document.getString("name");
+                        SpannableString sp = new SpannableString(EATERY_NAME);
+                        sp.setSpan(new ForegroundColorSpan(Color.rgb(0,132,255)), 0, EATERY_NAME.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        getSupportActionBar().setTitle(sp);
+                        getSupportActionBar().setBackgroundDrawable(new ColorDrawable(Color.argb(0,0,0,0)));
+
                         EATERY_LOCATION_LATITIUDE = document.getGeoPoint("location").getLatitude();
                         EATERY_LOCATION_LONGITUDE = document.getGeoPoint("location").getLongitude();
                         EATERY_ID = document.getId();
-                        tv.setText(document.getString("name"));
-
-
 
                     } else {
                         Log.d("LOGGER", "No such document");
@@ -166,30 +185,24 @@ public class Eatery extends AppCompatActivity implements Serializable {
              public void onSuccess(QuerySnapshot queryDocumentSnapshots) {
                  for(QueryDocumentSnapshot documentSnapshot: queryDocumentSnapshots)
                  {
-
                      dishes.add(documentSnapshot.get(ITEM_NAME));
 
                      prices.add(Double.parseDouble(documentSnapshot.get(ITEM_PRICE).toString()));
 
-
+                     image_urls.add(documentSnapshot.getString("image_url"));
                  }
-                 MyAdapter myAdapter = new MyAdapter(Eatery.this, dishes,  prices);
+                 MyAdapter myAdapter = new MyAdapter(Eatery.this, dishes,  prices, image_urls);
                  recyclerView.setAdapter(myAdapter);
+
                  recyclerView.setLayoutManager(new LinearLayoutManager(Eatery.this));
-                 progressDialog.dismiss();
 
                  try {
-
                      myAdapter.SetonValueChangeListener(new MyAdapter.OnItemClickListener() {
 
 
                          @RequiresApi(api = Build.VERSION_CODES.N)
                          @Override
                          public void onValueChangeListener(int position, int item_count) {
-
-
-
-
                              if(item_count==0)
                              {
                                  order.remove(dishes.get(position).toString());
@@ -207,9 +220,6 @@ public class Eatery extends AppCompatActivity implements Serializable {
                                  {
                                      btn.setEnabled(true);
                                  }
-
-//                                 data = order.get(dishes.get(position).toString());
-//                                 Toast.makeText(Eatery.this, data.name + "- changed to " + data.items + "items", Toast.LENGTH_SHORT).show();
                              }
                              else
                              {
@@ -219,37 +229,22 @@ public class Eatery extends AppCompatActivity implements Serializable {
                                  {
                                      btn.setEnabled(true);
                                  }
-
-//                                 Toast.makeText(Eatery.this, order.get(dishes.get(position).toString()).name + "- added " + item_count + " items", Toast.LENGTH_SHORT).show();
-
                              }
-
-
                          }
                      });
 
                  }
                  catch (Exception e)
                  {
-//                     Toast.makeText(Eatery.this, "Set any value!", Toast.LENGTH_SHORT).show();
+                     Log.d("Eatery Activity - ", e.toString());
                  }
-
-
-
-
              }
          }).addOnFailureListener(new OnFailureListener() {
              @Override
              public void onFailure(@NonNull Exception e) {
-//                 Toast.makeText(Eatery.this, "Servers not responding!", Toast.LENGTH_SHORT).show();
+                 Toast.makeText(Eatery.this, "Sorry! We are having some problem!", Toast.LENGTH_SHORT).show();
              }
          });
-
-
-
-
-
-
     }
 
     @Override
@@ -265,13 +260,14 @@ public class Eatery extends AppCompatActivity implements Serializable {
         {
             menu.findItem(R.id.user_info).setTitle("No User logged in");
             menu.findItem(R.id.user_info).setEnabled(false);
-
         }
 
         return super.onPrepareOptionsMenu(menu);
     }
 
 
+    private GoogleSignInClient mGoogleSignInClient;
+    private GoogleSignInOptions gso;
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
 
@@ -279,22 +275,35 @@ public class Eatery extends AppCompatActivity implements Serializable {
         {
             case R.id.logout:
             {
+                LoginManager.getInstance().logOut();
+                gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                        .requestIdToken(getString(R.string.default_web_client_id))
+                        .requestEmail()
+                        .build();
+                mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
                 FirebaseAuth.getInstance().signOut();
-                Intent intent = new Intent(this, MainActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
 
-                startActivity(intent);
+                // Google sign out
+                mGoogleSignInClient.signOut().addOnCompleteListener(this,
+                        new OnCompleteListener<Void>() {
+                            @Override
+                            public void onComplete(@NonNull Task<Void> task) {
+                                Intent intent = new Intent(Eatery.this, MainActivity.class);
+                                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+
+                                startActivity(intent);
+                            }
+                        });
+
                 finish();
             }
             case R.id.Home:
             {
                 Intent intent = new Intent(this, MainActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-
                 startActivity(intent);
                 finish();
             }
-
 
         }
         return super.onOptionsItemSelected(item);

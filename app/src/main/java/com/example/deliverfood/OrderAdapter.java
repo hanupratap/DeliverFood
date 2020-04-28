@@ -1,6 +1,10 @@
 package com.example.deliverfood;
 
 import android.content.Context;
+import android.graphics.Color;
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.style.ForegroundColorSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -48,14 +52,20 @@ public class OrderAdapter extends ArrayAdapter {
         TextView order_item_countt = convertView.findViewById(R.id.order_item_count);
         TextView order_item_pricet = convertView.findViewById(R.id.order_item_price);
 
+        SpannableString sp = new SpannableString("Total");
+        sp.setSpan(new ForegroundColorSpan(Color.rgb(105,105,215)),0,"Total".length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        if(name.equals("Total"))
+        {
+            order_item_namet.setText(sp);
+        }
+        else
+        {
+            order_item_namet.setText(name);
+        }
         order_item_countt.setText("Count : " + count);
-        order_item_namet.setText(name);
+
         order_item_pricet.setText("Price : " +String.valueOf(price));
-        order_item_subtotalt.setText("SubTotal : " +String.valueOf(sub_total));
-
-
-
-
+        order_item_subtotalt.setText("Rs. " +String.valueOf(sub_total));
         return convertView;
 
     }

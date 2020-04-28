@@ -18,25 +18,11 @@
         android:text="\t Note : "
         android:textAlignment="textStart"
         android:textSize="15dp"
-        android:textStyle="bold"
+
+        android:textColor="@color/design_default_color_error"
 
         app:layout_constraintBottom_toTopOf="@+id/textView53"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
-
-    <TextView
-        android:id="@+id/textView54"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:padding="5dp"
-        android:text="\t Discount : "
-        android:textAlignment="textStart"
-        android:textSize="15dp"
-
-        android:textStyle="bold"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent" />
 
     <TextView
@@ -48,8 +34,8 @@
         android:textAlignment="textStart"
         android:textSize="15dp"
         android:textStyle="bold"
-
-        app:layout_constraintBottom_toTopOf="@+id/textView54"
+        android:textColor="@color/quantum_googblue700"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintStart_toStartOf="parent" />
@@ -59,15 +45,16 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:padding="5dp"
-        android:text="\tOrder ID : "
-        android:textAlignment="textStart"
-        android:textSize="15dp"
-        android:textStyle="bold"
+        android:text=""
+        android:textAlignment="center"
+        android:textColor="@color/quantum_amber700"
+        android:textSize="12dp"
 
+        app:layout_constraintBottom_toBottomOf="@+id/textView51"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textView51" />
+        app:layout_constraintHorizontal_bias="0.2"
+        app:layout_constraintStart_toEndOf="@+id/textView51"
+        app:layout_constraintTop_toTopOf="@+id/textView51" />
 
     <TextView
         android:id="@+id/textView50"
@@ -126,63 +113,50 @@
         android:textStyle="bold"
 
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintHorizontal_bias="0.444"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/button9" />
+        app:layout_constraintTop_toBottomOf="@+id/lottieAnimationView2" />
 
     <TextView
         android:id="@+id/textView51"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
         android:padding="5dp"
         android:text="Order Details"
-        android:layout_marginTop="10dp"
         android:textAlignment="textStart"
         android:textColor="@color/quantum_googblue"
         android:textSize="15dp"
         android:textStyle="bold"
 
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/textView50" />
 
-    <TextView
-        android:id="@+id/textView32"
+    <com.airbnb.lottie.LottieAnimationView
+        android:id="@+id/lottieAnimationView2"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:padding="10dp"
-        android:text="Order Delivered"
-        android:textAlignment="textEnd"
-        android:textColor="@color/quantum_googgreen"
-        android:textSize="20dp"
-        android:textStyle="bold"
-
+        android:layout_height="60dp"
+        android:foregroundGravity="fill_vertical"
+        android:padding="0dp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/button9"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:lottie_autoPlay="true"
+        app:lottie_fileName="completed.json"
+        app:lottie_loop="true" />
+
 
     <ListView
+        android:id="@+id/listView9"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:divider="@null"
+        android:dividerHeight="0dp"
         android:padding="10dp"
         app:layout_constraintBottom_toTopOf="@+id/textView55"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textView52" />
+        app:layout_constraintTop_toBottomOf="@+id/textView51" />
 
-    <Button
-        android:id="@+id/button9"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:text="Go Back"
-        android:padding="0dp"
-        android:layout_margin="2dp"
-        android:background="@drawable/white_border"
-        android:textColor="@color/quantum_googgreen"
-        android:backgroundTint="#fff"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>

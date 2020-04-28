@@ -3,20 +3,20 @@ package com.example.deliverfood;
 import androidx.annotation.NonNull;
 
 
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
 
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
-import android.app.ProgressDialog;
 import android.content.Context;
 
 import android.content.DialogInterface;
 import android.content.Intent;
-
-import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.location.Address;
 import android.location.Criteria;
 import android.location.Geocoder;
@@ -25,10 +25,13 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 
+import android.os.Handler;
 import android.os.Parcelable;
 import android.provider.Settings;
 
 import android.util.Log;
+import android.view.View;
+import android.widget.LinearLayout;
 import android.widget.SearchView;
 
 import android.widget.Toast;
@@ -51,6 +54,7 @@ import com.google.android.gms.tasks.OnSuccessListener;
 
 import com.google.android.gms.tasks.Task;
 
+import com.google.android.material.snackbar.Snackbar;
 import com.google.common.collect.Maps;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -94,66 +98,60 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
     private FirebaseUser user;
-
     private Location currentLocation;
-
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
     private CollectionReference collectionReference = db.collection("Eateries");
-
     private DocumentReference noteRef = db.collection("Eateries").document("Eatery");
-
     private static String name;
     private static String description;
     private static GeoPoint gp;
     private static LatLng varpos;
-
     private String marker_id, id;
 
     Map<LatLng,String> hashmap = new HashMap<LatLng,String>();
-
     private FusedLocationProviderClient fusedLocationProviderClient;
-
-
-
-
-
+    GeoPoint saved_geopoint = null;
     private String USER_LIST = "Users";
-
     private static final float DEFAULT_ZOOM = 15;
-
-
-
-    private static final int LOCATION_PERMISSION_REQUEST_CODE = 1234;
-
     SearchView searchView;
-
-
     Map user_instance = new HashMap<>();
-    private ProgressDialog progressDialog;
-
-
-    private static final String FINE_LOCATION = Manifest.permission.ACCESS_FINE_LOCATION;
-    private static final String COURSE_LOCATION = Manifest.permission.ACCESS_COARSE_LOCATION;
-
-
-    Marker temp_marker;
-
-
+    CoordinatorLayout linear;
     @Override
     protected void onStart() {
         super.onStart();
         getLocation();
+
+
+
+
+        if(saved_geopoint!=null)
+        {
+            LatLng latLng = new LatLng(saved_geopoint.getLatitude(),saved_geopoint.getLongitude());
+            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 10F));
+        }
     }
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
         searchView = findViewById(R.id.searchView);
-        user = getIntent().getParcelableExtra("user");
+        user = FirebaseAuth.getInstance().getCurrentUser();
         id = user.getUid();
 
 
+
+
+
+        linear = findViewById(R.id.linearLayout2);
+
+
+        Snackbar.make(linear, "Select any marker, then click on the info-window to see the menu of that eatery.",Snackbar.LENGTH_INDEFINITE)
+                .setTextColor(Color.WHITE)
+                .setBackgroundTint(Color.argb(225, 40,40,40))
+                .show();
 
 
 
@@ -181,11 +179,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                             Address address = addressList.get(0);
                             LatLng latLng = new LatLng(address.getLatitude(),address.getLongitude());
                             mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 10F));
-
+                            saved_geopoint = new GeoPoint(latLng.latitude, latLng.longitude);
                         }
                         else
                         {
-                            Toast.makeText(MapsActivity.this, "No such Location found!", Toast.LENGTH_SHORT).show();
+
+                            Snackbar.make(linear, "No such Location found!", Snackbar.LENGTH_INDEFINITE)
+                                    .setAction("Close", new View.OnClickListener() {
+                                        @Override
+                                        public void onClick(View view) {
+
+                                        }
+                                    })
+                                    .setActionTextColor(getResources().getColor(R.color.colorAccent)).show();
                         }
 
                     }
@@ -212,14 +218,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
     }
-
-
-
-
-
-
-
-
     /**
      * Manipulates the map once available.
      * This callback is triggered when the map is ready to be used.
@@ -260,6 +258,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             @Override
             public void onFailure(@NonNull Exception e) {
                 Toast.makeText(MapsActivity.this, "FAILED", Toast.LENGTH_SHORT).show();
+                Snackbar.make(linear, "No such Location found!", Snackbar.LENGTH_INDEFINITE)
+                        .setAction("Close", new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+
+                            }
+                        })
+                        .setActionTextColor(getResources().getColor(R.color.colorAccent)).show();
             }
         });
 
@@ -283,24 +289,72 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         try {
             final Task location = fusedLocationProviderClient.getLastLocation();
             location.addOnCompleteListener(new OnCompleteListener() {
+                @SuppressLint("MissingPermission")
                 @Override
                 public void onComplete(@NonNull Task task) {
                if(task.isSuccessful())
                {
                    if(task.getResult()!=null)
                    {
-//                       Toast.makeText(MapsActivity.this, "Found location", Toast.LENGTH_SHORT).show();
                        currentLocation = (Location) task.getResult();
-                       moveCamera(new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude()), DEFAULT_ZOOM);
+
+                       if(saved_geopoint==null)
+                       {
+                           mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude()), DEFAULT_ZOOM));
+                       }
+                       else
+                       {
+                           moveCamera(new LatLng(saved_geopoint.getLatitude(), saved_geopoint.getLongitude()), 10F);
+                       }
                    }
                    else
                    {
-                       Toast.makeText(MapsActivity.this, "Please Turn on Location Services!", Toast.LENGTH_SHORT).show();
+                       LocationListener locationListener;
+                       locationListener = new LocationListener() {
+                           @Override
+                           public void onLocationChanged(Location location) {
+                               currentLocation = location;
+                           }
+
+                           @Override
+                           public void onStatusChanged(String s, int i, Bundle bundle) {
+
+                           }
+
+                           @Override
+                           public void onProviderEnabled(String s) {
+
+                           }
+
+                           @Override
+                           public void onProviderDisabled(String s) {
+                               Snackbar.make(linear, "Please Turn on Location Services", Snackbar.LENGTH_INDEFINITE)
+                                       .setAction("Close", new View.OnClickListener() {
+                                           @Override
+                                           public void onClick(View view) {
+
+                                           }
+                                       })
+                                       .setActionTextColor(getResources().getColor(R.color.colorAccent)).show();
+                           }
+                       };
+
+                       LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+                       locationManager.requestLocationUpdates("gps", 5000,0, locationListener);
+
                    }
                }
                else
                {
-                   Toast.makeText(MapsActivity.this, "location not Found ", Toast.LENGTH_SHORT).show();
+
+                   Snackbar.make(linear, "Location not found", Snackbar.LENGTH_INDEFINITE)
+                           .setAction("Close", new View.OnClickListener() {
+                               @Override
+                               public void onClick(View view) {
+
+                               }
+                           })
+                           .setActionTextColor(getResources().getColor(R.color.colorAccent)).show();
 
                }
                 }
@@ -362,17 +416,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             a.putExtra("marker", marker_id);
 
             MapsActivity.this.startActivity(a);
-            finish();
         }
 
-
-
-
-
-
     }
-
-
-
 
 }

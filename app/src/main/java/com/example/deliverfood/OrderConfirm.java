@@ -6,22 +6,30 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.style.AlignmentSpan;
+import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
+import com.airbnb.lottie.LottieAnimationView;
+import com.airbnb.lottie.LottieImageAsset;
+import com.facebook.login.LoginManager;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -84,6 +92,8 @@ public class OrderConfirm extends AppCompatActivity {
 
 
 
+    LottieAnimationView lottieAnimationView;
+
     CoordinatorLayout coordinatorLayout;
 
 
@@ -98,6 +108,10 @@ public class OrderConfirm extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_order_confirm);
+        SpannableString sp = new SpannableString("Waiting for confirmation...");
+        sp.setSpan(new ForegroundColorSpan(Color.rgb(0,132,255)), 0, "Waiting for confirmation...".length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        getSupportActionBar().setTitle(sp);
+        getSupportActionBar().setBackgroundDrawable(new ColorDrawable(Color.argb(0,0,0,0)));
 
         tv = findViewById(R.id.textView5);
         tv1 = findViewById(R.id.textView15);
@@ -106,16 +120,9 @@ public class OrderConfirm extends AppCompatActivity {
         tv4 = findViewById(R.id.textView16);
         ls = findViewById(R.id.listView22);
         coordinatorLayout = findViewById(R.id.coordinatorLayout);
-
-
-
-
-
-
-
-
+        lottieAnimationView = findViewById(R.id.lotte);
         getLocation();
-        user = getIntent().getParcelableExtra("user");
+        user = FirebaseAuth.getInstance().getCurrentUser();
 
         order_id = getIntent().getExtras().getString("order_id");
         tv.append(order_id);
@@ -132,30 +139,32 @@ public class OrderConfirm extends AppCompatActivity {
                 String name;
                 int count;
                 double price;
+                double sub_total = 0;
+                int sub_count = 0;
                 int iend;
                 for(String s:map.keySet())
                 {
-
-
                     iend = s.indexOf("$");
                     name = s.substring(0,iend);
                     price = Double.parseDouble(s.substring(iend+1));
                     count = (int)Double.parseDouble(map.get(s).toString());
+                    sub_total = sub_total + price*count;
+                    sub_count = sub_count + count;
                     itemlist.add(new Order_item_template(name,price, count, price*count));
-
-
                 }
 
+                itemlist.add(new Order_item_template("Total", sub_total, sub_count, sub_total));
+
+
                 orderAdapter = new OrderAdapter(OrderConfirm.this, R.layout.list_order_items, itemlist);
-                 ls.setAdapter(orderAdapter);
-
-
-
+                ls.setAdapter(orderAdapter);
 
 
 
             }
         });
+
+
 
 
 
@@ -190,9 +199,7 @@ public class OrderConfirm extends AppCompatActivity {
                             Map a = new HashMap();
                             if(order_count>=3 && daysBetween<7)
                             {
-
                                 a.put("discount", true);
-
                             }
                             else
                             {
@@ -201,17 +208,11 @@ public class OrderConfirm extends AppCompatActivity {
                             }
                             FirebaseFirestore.getInstance().collection("Users").document(user.getUid()).set(a, SetOptions.merge());
 
-
-//                            Toast.makeText(OrderConfirm.this, String.valueOf(daysBetween) , Toast.LENGTH_SHORT).show();
-
                         }
                     });
                 }
             }
         });
-
-
-
 
         FirebaseFirestore.getInstance().collection("Current_Orders").document(order_id).addSnapshotListener(new EventListener<DocumentSnapshot>() {
             @Override
@@ -227,8 +228,17 @@ public class OrderConfirm extends AppCompatActivity {
                     if(documentSnapshot.get("confirm").toString()=="true")
                     {
                         tv4.setText("Order Confirmed!");
-                        Toast.makeText(OrderConfirm.this, documentSnapshot.getString("user_name"), Toast.LENGTH_SHORT).show();
-                        funcAct();
+
+                        lottieAnimationView.setAnimationFromUrl("https://assets2.lottiefiles.com/packages/lf20_KznChd.json");
+                        new Handler().postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                funcAct();
+
+                            }
+                        }, 1500);
+
+
                     }
 
 
@@ -245,8 +255,7 @@ public class OrderConfirm extends AppCompatActivity {
     {
         if(temp)
         {
-            Intent intent = new Intent(OrderConfirm.this, Deliver_Ordered.class);
-            intent.putExtra("user", user);
+            Intent intent = new Intent(OrderConfirm.this, OrderConfirmSplash.class);
             intent.putExtra("order_id",order_id);
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
             intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
@@ -284,6 +293,8 @@ public class OrderConfirm extends AppCompatActivity {
     }
 
 
+    private GoogleSignInClient mGoogleSignInClient;
+    private GoogleSignInOptions gso;
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
 
@@ -291,18 +302,32 @@ public class OrderConfirm extends AppCompatActivity {
         {
             case R.id.logout:
             {
+                LoginManager.getInstance().logOut();
+                gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                        .requestIdToken(getString(R.string.default_web_client_id))
+                        .requestEmail()
+                        .build();
+                mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
                 FirebaseAuth.getInstance().signOut();
-                Intent intent = new Intent(this, MainActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
 
-                startActivity(intent);
+                // Google sign out
+                mGoogleSignInClient.signOut().addOnCompleteListener(this,
+                        new OnCompleteListener<Void>() {
+                            @Override
+                            public void onComplete(@NonNull Task<Void> task) {
+                                Intent intent = new Intent(OrderConfirm.this, MainActivity.class);
+                                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+
+                                startActivity(intent);
+                            }
+                        });
+
                 finish();
             }
             case R.id.Home:
             {
                 Intent intent = new Intent(this, MainActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-
                 startActivity(intent);
                 finish();
             }
@@ -311,6 +336,7 @@ public class OrderConfirm extends AppCompatActivity {
         }
         return super.onOptionsItemSelected(item);
     }
+
     void getLocation() {
 
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
