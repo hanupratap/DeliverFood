@@ -1,6 +1,6 @@
 # DeliverFood
 
-## Overview -
+## Overview
 
 ### Android App  
 
